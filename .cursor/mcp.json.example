@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "cua-desktop": {
+      "command": "/ABSOLUTE/PATH/TO/repo/scripts/mcp-bridge.sh",
+      "args": []
+    }
+  }
+}

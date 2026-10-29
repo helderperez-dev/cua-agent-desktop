@@ -1,0 +1,9 @@
+# Codex MCP example — point at the host bridge script.
+# Register with something like:
+#   codex mcp add cua-desktop -- /ABSOLUTE/PATH/TO/repo/scripts/mcp-bridge.sh
+#
+# Or merge into ~/.codex/config.toml:
+
+[mcp_servers.cua-desktop]
+command = "/ABSOLUTE/PATH/TO/repo/scripts/mcp-bridge.sh"
+args = []

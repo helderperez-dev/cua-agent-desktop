@@ -1,0 +1,6 @@
+# Remote MCP (Streamable HTTP) — not stdio.
+# Replace URL + Bearer token from Railway.
+
+[mcp_servers.cua-desktop]
+url = "https://YOUR-SERVICE.up.railway.app/mcp"
+http_headers = { Authorization = "Bearer YOUR_MCP_API_KEY" }

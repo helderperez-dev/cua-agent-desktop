@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cua-desktop": {
+      "type": "http",
+      "url": "https://YOUR-SERVICE.up.railway.app/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_MCP_API_KEY"
+      }
+    }
+  }
+}

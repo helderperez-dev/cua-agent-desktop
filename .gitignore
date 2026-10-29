@@ -1,0 +1,10 @@
+.env
+.DS_Store
+*.log
+workspace/*
+!workspace/.gitkeep
+data/chrome-profile/*
+!data/chrome-profile/.gitkeep
+.cursor/mcp.json
+*.pyc
+__pycache__/

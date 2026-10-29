@@ -1,0 +1,30 @@
+{
+	auto_https off
+	admin off
+}
+
+# Railway / container edge: single public HTTP port.
+# - /mcp  → Streamable HTTP MCP (supergateway)
+# - /sse,/message → SSE MCP (same gateway)
+# - /*    → noVNC (guest :6901)
+:{$PORT} {
+	handle /health {
+		respond "ok" 200
+	}
+
+	handle /mcp* {
+		reverse_proxy 127.0.0.1:8200
+	}
+
+	handle /sse* {
+		reverse_proxy 127.0.0.1:8200
+	}
+
+	handle /message* {
+		reverse_proxy 127.0.0.1:8200
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:6901
+	}
+}

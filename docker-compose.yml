@@ -1,0 +1,34 @@
+services:
+  desktop:
+    build: .
+    image: localhost/cua-agent-desktop:local
+    container_name: cua-agent-desktop
+    mem_limit: 4g
+    cpus: 2
+    shm_size: 512m
+    environment:
+      VNC_PW: ${VNC_PW:-changeme}
+      PORT: ${PORT:-8080}
+      MCP_API_KEY: ${MCP_API_KEY:-}
+      REQUIRE_MCP_API_KEY: ${REQUIRE_MCP_API_KEY:-0}
+      MCP_GATEWAY_PORT: ${MCP_GATEWAY_PORT:-8200}
+    ports:
+      # Edge proxy (Caddy): noVNC + /mcp on one port, loopback-only for local use
+      - "127.0.0.1:6080:8080"
+    volumes:
+      - ./workspace:/home/cua/workspace
+      # Persist Chrome cookies, logins, and profile across recreate/down.
+      - ./data/chrome-profile:/home/cua/.config/google-chrome
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETUID
+      - SETGID
+    ipc: private
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
