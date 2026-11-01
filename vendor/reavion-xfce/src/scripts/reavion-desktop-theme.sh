@@ -3,7 +3,7 @@
 # Safe for persistent VOLUME /home/reavion — reseeds when THEME_VERSION bumps.
 set -euo pipefail
 
-THEME_VERSION="2"
+THEME_VERSION="3"
 STAMP="${HOME}/.config/reavion-desktop-theme.version"
 SHARE="/usr/share/reavion-desktop"
 WALLPAPER="/usr/share/backgrounds/reavion/reavion-mountains.jpg"

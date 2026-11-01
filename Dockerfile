@@ -138,7 +138,7 @@ COPY vendor/reavion-xfce/assets/backgrounds/reavion-mountains.jpg /usr/share/bac
 COPY vendor/reavion-xfce/src/desktop-skel/ /usr/share/reavion-desktop/skel/
 COPY --chown=reavion:reavion vendor/reavion-xfce/src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
 RUN chmod 0755 /usr/local/bin/reavion-desktop-theme.sh /usr/local/bin/xstartup.sh \
- && printf '2\n' > /usr/share/reavion-desktop/THEME_VERSION
+ && printf '3\n' > /usr/share/reavion-desktop/THEME_VERSION
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 
