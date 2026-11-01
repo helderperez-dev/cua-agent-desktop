@@ -1,10 +1,93 @@
-# Fallback: compile reavion-driver from vendor/ (no GHCR pull).
-# Use when GHCR auth is unavailable (e.g. early Railway Dockerfile deploy).
-# Prefer the default Dockerfile once seats pull ghcr.io/helderperez-dev/reavion-desktop.
+# Self-contained seat image: no GHCR pulls.
+# Builds XFCE + reavion-driver from vendor/ (for Railway Hobby / private GHCR).
+# Prefer the default Dockerfile + public ghcr.io/.../reavion-desktop once packages are public.
 
-ARG DESKTOP_BASE=ghcr.io/helderperez-dev/reavion-xfce:main
 ARG RUST_VERSION=1.97.1
 
+# --- XFCE desktop base (from vendor/reavion-xfce) ---
+FROM python:3.13-slim-bookworm AS xfce
+
+LABEL org.opencontainers.image.title="reavion/xfce"
+LABEL org.opencontainers.image.description="Multi-architecture XFCE desktop for Reavion seats"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    HOME=/home/reavion \
+    DISPLAY=:1 \
+    DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus \
+    VNC_PORT=5901 \
+    NOVNC_PORT=6901 \
+    VNC_RESOLUTION=1280x900 \
+    VNC_COL_DEPTH=24 \
+    PATH=/opt/venv/bin:$PATH
+
+USER root
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    at-spi2-core \
+    ca-certificates \
+    curl \
+    dbus-x11 \
+    ffmpeg \
+    firefox-esr \
+    fonts-dejavu-core \
+    libglib2.0-bin \
+    netcat-openbsd \
+    procps \
+    sudo \
+    supervisor \
+    tigervnc-standalone-server \
+    tigervnc-tools \
+    websockify \
+    x11-xserver-utils \
+    xdg-utils \
+    xfce4 \
+    xfce4-terminal \
+    && apt-get clean \
+    && find /var/lib/apt/lists -mindepth 1 -delete
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates \
+ && sed -i -E 's#^(mozilla/(emSign_ECC_Root_CA_-_G3|Comodo_AAA_Services_root)\.crt)$#!\1#' /etc/ca-certificates.conf \
+ && update-ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --uid 1000 --create-home --shell /bin/bash --groups sudo reavion \
+    && echo "reavion ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/reavion \
+    && chmod 0440 /etc/sudoers.d/reavion
+
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/python -m pip install --no-cache-dir --upgrade pip
+
+RUN printf '%s\n' \
+      'pref("datareporting.policy.firstRunURL", "");' \
+      'pref("datareporting.policy.dataSubmissionEnabled", false);' \
+      'pref("datareporting.healthreport.uploadEnabled", false);' \
+      'pref("browser.aboutwelcome.enabled", false);' \
+      > /etc/firefox-esr/reavion.js
+
+COPY vendor/reavion-xfce/src/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+COPY vendor/reavion-xfce/src/scripts/ /usr/local/bin/
+COPY vendor/reavion-xfce/vendor/reavion-vnc/ /usr/share/reavion-vnc/
+RUN ln -sfn /usr/share/reavion-vnc /usr/share/novnc
+COPY --chown=reavion:reavion vendor/reavion-xfce/src/xfce/ /home/reavion/.config/xfce4/
+
+RUN chmod +x /usr/local/bin/*.sh \
+    && mkdir -p \
+        /home/reavion/.cache/dconf \
+        /home/reavion/.config/autostart \
+        /home/reavion/.mozilla/firefox \
+        /home/reavion/.vnc \
+        /home/reavion/shared \
+        /home/reavion/storage \
+        /run/user/1000 \
+    && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
+    && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
+    && chown -R reavion:reavion /home/reavion /run/user/1000 \
+    && chmod 0700 /run/user/1000
+
+WORKDIR /home/reavion
+
+# --- reavion-driver from vendor ---
 FROM docker.io/library/rust:${RUST_VERSION}-bookworm AS driver-builder
 
 RUN set -eux; \
@@ -28,19 +111,18 @@ RUN set -eux; \
 FROM busybox:1.36 AS driver
 COPY --from=driver-builder /out/reavion-driver /out/reavion-driver
 
-ARG DESKTOP_BASE=ghcr.io/helderperez-dev/reavion-xfce:main
-FROM ${DESKTOP_BASE}
+# --- seat layers ---
+FROM xfce
 
 ARG TARGETARCH
 ARG CADDY_VERSION=2.10.2
 ARG REAVION_DRIVER_VERSION=0.38.0
-ARG DESKTOP_BASE
 
 LABEL org.opencontainers.image.title="reavion-desktop" \
       reavion.desktop.driver="reavion-driver" \
       cua.agent.desktop.managed="true" \
       cua.agent.desktop.driver="reavion-driver" \
-      cua.agent.desktop.base="${DESKTOP_BASE}"
+      cua.agent.desktop.base="vendor/reavion-xfce"
 
 ENV PORT=8080 \
     MCP_GATEWAY_PORT=8200 \
@@ -114,7 +196,6 @@ RUN set -eux; \
     install -d -m 0755 /usr/local/libexec/cua-desktop; \
     ln -sfn /usr/local/libexec/reavion-desktop/reavion-driver /usr/local/libexec/cua-desktop/cua-driver; \
     /usr/local/libexec/reavion-desktop/reavion-driver --version | tee /tmp/reavion-driver-version.txt; \
-    # Pin check only for semver build-args (skip floating tags like main/latest).
     case "${REAVION_DRIVER_VERSION}" in \
       main|latest|sha-*|"") ;; \
       *) grep -F "reavion-driver ${REAVION_DRIVER_VERSION}" /tmp/reavion-driver-version.txt ;; \

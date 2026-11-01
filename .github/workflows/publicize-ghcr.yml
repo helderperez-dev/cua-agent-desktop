@@ -1,0 +1,37 @@
+# One-shot: make cascade GHCR packages publicly pullable for Railway (Hobby).
+# Requires REAVION_DISPATCH_TOKEN with write:packages + delete:packages.
+name: Publicize GHCR packages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publicize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set package visibility public
+        env:
+          GH_TOKEN: ${{ secrets.REAVION_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::REAVION_DISPATCH_TOKEN secret missing"
+            exit 1
+          fi
+          ok=0
+          for pkg in reavion-desktop reavion-xfce reavion-driver reavion-vnc; do
+            code=$(curl -sS -o /tmp/vis.json -w "%{http_code}" -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/user/packages/container/${pkg}/visibility" \
+              -d '{"visibility":"public"}' || true)
+            echo "${pkg}: HTTP ${code} $(cat /tmp/vis.json)"
+            if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+              ok=$((ok + 1))
+            fi
+          done
+          if [ "$ok" -eq 0 ]; then
+            echo "::error::Could not publicize any package (token needs delete:packages, or set visibility in GitHub UI)"
+            exit 1
+          fi
