@@ -160,14 +160,14 @@ RUN chmod 0755 \
  && rm -f /etc/supervisor/conf.d/cua-driver.conf \
  && for conf in reavion-driver mcp-gateway edge-proxy; do \
       if [ -f /etc/supervisor/conf.d/supervisord.conf ] \
-         && ! grep -q "\\[program:${conf}\\]" /etc/supervisor/conf.d/supervisord.conf; then \
+         && ! grep -Fq "[program:${conf}]" /etc/supervisor/conf.d/supervisord.conf; then \
         printf '\n' >> /etc/supervisor/conf.d/supervisord.conf; \
         cat "/etc/supervisor/conf.d/${conf}.conf" >> /etc/supervisor/conf.d/supervisord.conf; \
       fi; \
     done \
  && if [ -f /etc/supervisor/supervisord.conf ] \
-      && ! grep -q 'files *= */etc/supervisor/conf.d' /etc/supervisor/supervisord.conf \
-      && ! grep -q '\\[program:reavion-driver\\]' /etc/supervisor/supervisord.conf; then \
+      && ! grep -Eq 'files[[:space:]]*=[[:space:]]*/etc/supervisor/conf.d' /etc/supervisor/supervisord.conf \
+      && ! grep -Fq '[program:reavion-driver]' /etc/supervisor/supervisord.conf; then \
       printf '\n[include]\nfiles = /etc/supervisor/conf.d/*.conf\n' >> /etc/supervisor/supervisord.conf; \
     fi
 
