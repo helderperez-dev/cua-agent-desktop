@@ -37,3 +37,12 @@ Point the service at image `ghcr.io/helderperez-dev/reavion-desktop:main` (or re
    **Warning:** recreate mounts are empty — copy Chrome profile out first if you need cookies.
 
 4. Redeploy seats after remount.
+
+## Railway Hobby workaround (active)
+
+Private GHCR pulls need Railway **Pro** registry credentials. Until packages are public or Pro is enabled:
+
+- Seats/template build from GitHub with `dockerfilePath=Dockerfile.vendor` (no GHCR `FROM`)
+- Control plane: leave `MACHINE_SOURCE_IMAGE` empty so new seats use `MACHINE_SOURCE_REPO`
+- `cua-agent-desktop` was set **public** so Railway can clone; GHCR packages remain private
+
