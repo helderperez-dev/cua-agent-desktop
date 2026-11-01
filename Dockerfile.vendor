@@ -83,7 +83,9 @@ RUN chmod +x /usr/local/bin/*.sh \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
     && chown -R reavion:reavion /home/reavion /run/user/1000 \
-    && chmod 0700 /run/user/1000
+    && chmod 0700 /run/user/1000 \
+    && mkdir -p /var/log/supervisor \
+    && chmod 0755 /var/log/supervisor
 
 WORKDIR /home/reavion
 
@@ -232,5 +234,28 @@ RUN chmod 0755 \
       printf '\n[include]\nfiles = /etc/supervisor/conf.d/*.conf\n' >> /etc/supervisor/supervisord.conf; \
     fi
 
+# supervisord refuses to start if its log dir is missing (silent exit → Railway 502).
+RUN mkdir -p /var/log/supervisor /var/run \
+ && chmod 0755 /var/log/supervisor
+
+# Surface process logs on the container stdout/stderr for Railway.
+RUN set -eux; \
+    conf=/etc/supervisor/supervisord.conf; \
+    sed -i 's#^logfile=.*#logfile=/dev/null#' "$conf"; \
+    for f in /etc/supervisor/conf.d/*.conf; do \
+      [ -f "$f" ] || continue; \
+      sed -i \
+        -e 's#^stdout_logfile=.*#stdout_logfile=/dev/fd/1#' \
+        -e 's#^stderr_logfile=.*#stderr_logfile=/dev/fd/2#' \
+        "$f"; \
+      grep -q '^stdout_logfile_maxbytes=' "$f" || printf '\nstdout_logfile_maxbytes=0\nstderr_logfile_maxbytes=0\n' >> "$f"; \
+    done; \
+    for prog in dbus vncserver novnc; do \
+      sed -i \
+        -e "/^\[program:${prog}\]/,/^\[/{s#^stdout_logfile=.*#stdout_logfile=/dev/fd/1#; s#^stderr_logfile=.*#stderr_logfile=/dev/fd/2#}" \
+        "$conf"; \
+    done
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
 WORKDIR /home/reavion
 EXPOSE 8080
