@@ -1,0 +1,76 @@
+language = "C"
+include_guard = "REAVION_DRIVER_ABI_H"
+cpp_compat = true
+documentation = true
+usize_is_size_t = true
+style = "type"
+autogen_warning = "/* Generated from reavion-driver-sdk/src/abi.rs by reavion-driver-abi-header. Do not edit. */"
+header = "/* SPDX-License-Identifier: MIT */"
+after_includes = """
+#if defined(_WIN32)
+#if defined(REAVION_DRIVER_ABI_BUILD)
+#define REAVION_DRIVER_API __declspec(dllexport)
+#else
+#define REAVION_DRIVER_API __declspec(dllimport)
+#endif
+#else
+#define REAVION_DRIVER_API __attribute__((visibility(\"default\")))
+#endif
+"""
+
+[parse]
+parse_deps = false
+
+[export]
+include = [
+  "REAVION_DRIVER_ABI_MAJOR",
+  "REAVION_DRIVER_ABI_MINOR",
+  "REAVION_DRIVER_ABI_PATCH",
+  "ReavionDriverAbiVersion",
+  "ReavionDriverStatus",
+  "ReavionDriverBuffer",
+  "ReavionDriverHandle",
+  "ReavionDriverSessionHandle",
+  "ReavionDriverOperation",
+  "ReavionDriverCompletionV1",
+  "reavion_driver_abi_version_v1",
+  "reavion_driver_abi_is_compatible_v1",
+  "reavion_driver_buffer_free_v1",
+  "reavion_driver_create_v1",
+  "reavion_driver_destroy_v1",
+  "reavion_driver_is_available_v1",
+  "reavion_driver_metadata_json_v1",
+  "reavion_driver_list_tools_json_v1",
+  "reavion_driver_invoke_v1",
+  "reavion_driver_session_create_v1",
+  "reavion_driver_session_destroy_v1",
+  "reavion_driver_session_invoke_v1",
+  "reavion_driver_shutdown_v1",
+  "reavion_driver_operation_cancel_v1",
+  "reavion_driver_operation_release_v1",
+]
+exclude = [
+  "Handle",
+  "Session",
+  "Operation",
+  "buffer_free",
+  "create",
+  "destroy",
+  "is_available",
+  "metadata_json",
+  "list_tools_json",
+  "invoke",
+  "session_create",
+  "session_destroy",
+  "session_invoke",
+  "shutdown",
+  "operation_cancel",
+  "operation_release",
+]
+
+[enum]
+rename_variants = "ScreamingSnakeCase"
+prefix_with_name = true
+
+[fn]
+prefix = "REAVION_DRIVER_API"

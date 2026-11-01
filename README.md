@@ -1,6 +1,8 @@
 # cua-agent-desktop
 
-Isolated Linux desktop sandbox for AI agents: XFCE runs inside Docker, **Cua Driver** exposes computer-use tools over MCP, and a human can watch or take over via **noVNC** in a browser.
+Isolated Linux desktop sandbox for AI agents: XFCE runs inside Docker, **Reavion Driver** exposes computer-use tools over MCP, and a human can watch or take over via **noVNC** in a browser.
+
+Driver source is built from private [`reavion-driver`](https://github.com/helderperez-dev/reavion-driver) (vendored under `vendor/reavion-driver`). Desktop base remains `trycua/xfce-cua`. This seat image repo is **`helderperez-dev/cua-agent-desktop`** (private).
 
 Locally you can use a stdio MCP bridge. For **Railway / remote**, the same container exposes **Streamable HTTP MCP** and noVNC behind Caddy on a single `$PORT`.
 
@@ -8,12 +10,13 @@ Locally you can use a stdio MCP bridge. For **Railway / remote**, the same conta
 
 - Docker Desktop / Engine (or Podman with `CUA_RUNTIME=podman`)
 - ~4 GB RAM reserved for the container (compose sets `mem_limit: 4g`)
-- macOS, Linux, or Windows with a working Docker CLI
+- Sibling `reavion-driver` checkout when refreshing vendor (`./scripts/sync-driver.sh`)
 
 ## Quick start (local)
 
 ```bash
 cp .env.example .env   # set VNC_PW (and optionally MCP_API_KEY)
+./scripts/sync-driver.sh   # if vendor/ is missing or stale
 ./scripts/build.sh
 ./scripts/up.sh
 open http://127.0.0.1:6080/vnc.html   # password = VNC_PW
@@ -27,7 +30,7 @@ open http://127.0.0.1:6080/vnc.html   # password = VNC_PW
 ./scripts/down.sh   # keeps ./workspace and ./data/chrome-profile
 ```
 
-Google Chrome is the default browser. Profile (cookies/logins) persists at `./data/chrome-profile`.
+Google Chrome is the default browser. Profile (cookies/logins) persists at `./data/chrome-profile`. Chrome is launched with `--force-renderer-accessibility` (required for Linux browser bind). The `--no-sandbox` banner is expected under `cap_drop: ALL` and does not block bind. Driver starts with `--grant existing-profile` so agents can attach to the logged-in Chrome window. Driver and noVNC share `DISPLAY=:1`.
 
 ## Connect MCP
 
@@ -59,7 +62,7 @@ Local edge equivalent: `http://127.0.0.1:6080/mcp` (set `MCP_API_KEY` in `.env`)
 See **[docs/railway.md](docs/railway.md)**. Summary:
 
 1. Deploy this repo (Dockerfile / `railway.toml`)
-2. Set `VNC_PW`, `MCP_API_KEY`, `REQUIRE_MCP_API_KEY=1`
+2. Set `VNC_PW`, `MCP_API_KEY`, `REQUIRE_MCP_API_KEY=1` (and optionally `VNC_RESOLUTION=1280x720`)
 3. ≥4 GB memory; optional volumes for Chrome profile + workspace
 4. Open `https://<domain>/vnc.html` and point MCP clients at `https://<domain>/mcp`
 
@@ -71,7 +74,7 @@ Client (browser / MCP HTTP)
         ▼
    Caddy :$PORT
      ├─ /vnc.html  → noVNC :6901
-     └─ /mcp       → supergateway → cua-driver mcp (unix socket)
+     └─ /mcp       → supergateway → reavion-driver mcp (unix socket)
 ```
 
 More detail: [docs/architecture.md](docs/architecture.md).
@@ -91,10 +94,12 @@ More detail: [docs/architecture.md](docs/architecture.md).
 | `/health` fails | Wait for Caddy; check `edge-proxy` logs |
 | MCP HTTP 401 | Set matching `MCP_API_KEY` / Bearer header |
 | VNC password rejected | `VNC_PW` in `.env` / Railway vars; recreate container after change |
+| Desk looks cropped / huge on phone | Confirm noVNC `resize=scale`; set `VNC_RESOLUTION=1280x720` and **redeploy** (geometry is fixed at VNC start) |
 | Local stdio bridge fails | Container running + socket ready; use absolute path in mcp.json |
 
 ## License / attribution
 
 - This harness: [MIT](LICENSE).
-- [Cua Driver](https://cua.ai/docs/cua-driver/quickstart) and `trycua/xfce-cua` — [trycua](https://github.com/trycua/cua).
+- Reavion Driver: `helderperez-dev/reavion-driver` (MIT-derived; see `vendor/reavion-driver/NOTICE`)
+- Desktop base: `trycua/xfce-cua` — [trycua](https://github.com/trycua/cua)
 - noVNC is bundled in the base image; [supergateway](https://github.com/supercorp-ai/supergateway) bridges stdio MCP to HTTP.

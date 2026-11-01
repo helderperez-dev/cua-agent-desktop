@@ -12,6 +12,15 @@ services:
       MCP_API_KEY: ${MCP_API_KEY:-}
       REQUIRE_MCP_API_KEY: ${REQUIRE_MCP_API_KEY:-0}
       MCP_GATEWAY_PORT: ${MCP_GATEWAY_PORT:-8200}
+      # TigerVNC framebuffer; must match what agents and mobile noVNC expect
+      VNC_RESOLUTION: ${VNC_RESOLUTION:-1280x720}
+      VNC_COL_DEPTH: ${VNC_COL_DEPTH:-24}
+      REAVION_SOCKET: /run/user/1000/reavion.sock
+      REAVION_DRIVER: /usr/local/libexec/reavion-desktop/reavion-driver
+      CUA_SOCKET: /run/user/1000/reavion.sock
+      CUA_DRIVER: /usr/local/libexec/reavion-desktop/reavion-driver
+      CUA_DRIVER_RS_TELEMETRY_ENABLED: "0"
+      REAVION_DRIVER_RS_TELEMETRY_ENABLED: "0"
     ports:
       # Edge proxy (Caddy): noVNC + /mcp on one port, loopback-only for local use
       - "127.0.0.1:6080:8080"

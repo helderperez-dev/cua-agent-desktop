@@ -47,7 +47,7 @@ echo "--- supervisor ---"
 "$RUNTIME" exec "$CONTAINER" supervisorctl status 2>/dev/null || true
 
 echo
-echo "--- cua-driver ---"
+echo "--- reavion-driver ---"
 if "$RUNTIME" exec -u cua "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
   echo "socket:    ${SOCKET} (ready)"
 else

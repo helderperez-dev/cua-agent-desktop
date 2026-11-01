@@ -1,0 +1,5 @@
+[bindings.python]
+cdylib_name = "reavion_driver_sdk"
+
+[bindings.python.external_packages]
+reavion_driver_contract = "reavion_driver._native_contract"

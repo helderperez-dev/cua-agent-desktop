@@ -7,8 +7,8 @@ cd "$ROOT_DIR"
 
 RUNTIME="${CUA_RUNTIME:-docker}"
 CONTAINER="${CUA_CONTAINER:-cua-agent-desktop}"
-SOCKET="${CUA_SOCKET:-/run/user/1000/cua.sock}"
-DRIVER="${CUA_DRIVER:-/usr/local/libexec/cua-desktop/cua-driver}"
+SOCKET="${REAVION_SOCKET:-${CUA_SOCKET:-/run/user/1000/reavion.sock}}"
+DRIVER="${REAVION_DRIVER:-${CUA_DRIVER:-/usr/local/libexec/reavion-desktop/reavion-driver}}"
 COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
 
 compose() {
@@ -17,7 +17,6 @@ compose() {
     echo "Install Docker Desktop / Engine, or set CUA_RUNTIME=podman." >&2
     exit 1
   fi
-  # Docker Compose v2 plugin or podman compose
   if "$RUNTIME" compose version >/dev/null 2>&1; then
     "$RUNTIME" compose -f "$COMPOSE_FILE" "$@"
   elif command -v docker-compose >/dev/null 2>&1 && [ "$RUNTIME" = docker ]; then

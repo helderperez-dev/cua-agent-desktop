@@ -1,0 +1,17 @@
+Reavion Driver
+==============
+
+This repository is a renamed, privately maintained snapshot of the MIT-licensed
+`libs/cua-driver` tree from https://github.com/trycua/cua
+
+Upstream project: trycua/cua (Cua Driver)
+Upstream license: MIT
+Source commit: 8db684185a93e854bb7811189d69f933bb15f55d
+
+Substantial portions of this software are Copyright (c) trycua contributors.
+Modifications and Reavion branding Copyright (c) Reavion.
+
+The OmniParser / perception extension artifacts (if present) may use a different
+license — see docs/perception-extension.md and THIRD_PARTY_NOTICES.md.
+
+Telemetry: monorepo cua-telemetry was replaced with a local minimal config stub (rust/crates/reavion-telemetry) so this tree builds without the trycua monorepo.

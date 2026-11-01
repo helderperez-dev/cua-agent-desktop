@@ -1,0 +1,12 @@
+[package]
+name = "reavion-telemetry"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Minimal telemetry config helpers for Reavion Driver (opt-out compatible with upstream Cua switches)"
+rust-version = "1.95"
+
+[dependencies]
+toml_edit = "0.22"

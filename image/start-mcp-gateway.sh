@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Expose cua-driver MCP over Streamable HTTP + SSE (not stdio) for remote clients.
+# Expose reavion-driver MCP over Streamable HTTP + SSE for remote clients.
 set -euo pipefail
 
 export HOME="${HOME:-/home/cua}"
 export DISPLAY="${DISPLAY:-:1}"
 export CUA_DRIVER_RS_TELEMETRY_ENABLED="${CUA_DRIVER_RS_TELEMETRY_ENABLED:-0}"
+export REAVION_DRIVER_RS_TELEMETRY_ENABLED="${REAVION_DRIVER_RS_TELEMETRY_ENABLED:-0}"
 
-SOCKET="${CUA_SOCKET:-/run/user/1000/cua.sock}"
-DRIVER="${CUA_DRIVER:-/usr/local/libexec/cua-desktop/cua-driver}"
+SOCKET="${REAVION_SOCKET:-${CUA_SOCKET:-/run/user/1000/reavion.sock}}"
+DRIVER="${REAVION_DRIVER:-${CUA_DRIVER:-/usr/local/libexec/reavion-desktop/reavion-driver}}"
 MCP_PORT="${MCP_GATEWAY_PORT:-8200}"
 API_KEY="${MCP_API_KEY:-}"
 
@@ -19,7 +20,7 @@ if [ -z "$API_KEY" ]; then
   echo "WARNING: MCP_API_KEY is empty; remote MCP is unauthenticated (local only)." >&2
 fi
 
-echo "Waiting for Cua socket ${SOCKET}..."
+echo "Waiting for driver socket ${SOCKET}..."
 deadline=$((SECONDS + 120))
 while (( SECONDS < deadline )); do
   if [ -S "$SOCKET" ]; then
@@ -29,7 +30,7 @@ while (( SECONDS < deadline )); do
   sleep 1
 done
 if [ ! -S "$SOCKET" ]; then
-  echo "ERROR: Cua socket not ready after 120s" >&2
+  echo "ERROR: driver socket not ready after 120s" >&2
   exit 1
 fi
 
@@ -40,7 +41,6 @@ if [ -n "$API_KEY" ]; then
   extra_args+=(--apiKey "$API_KEY")
 fi
 
-# Streamable HTTP at /mcp for remote clients (Cursor / Claude / Codex).
 if command -v supergateway >/dev/null 2>&1; then
   GATEWAY=(supergateway)
 else

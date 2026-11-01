@@ -1,18 +1,20 @@
 # Deploy on Railway
 
-One service runs the full stack: XFCE desktop, Cua Driver, noVNC, and a **remote MCP** gateway (Streamable HTTP — not stdio). Caddy listens on Railway’s `$PORT` and routes:
+One service runs the full stack: XFCE desktop, Reavion Driver, noVNC, and a **remote MCP** gateway (Streamable HTTP — not stdio). Caddy listens on Railway’s `$PORT` and routes:
 
 | Path | Backend |
 |---|---|
 | `/` / `/vnc.html` | noVNC desktop viewer |
-| `/mcp` | MCP Streamable HTTP (supergateway → `cua-driver mcp`) |
+| `/mcp` | MCP Streamable HTTP (supergateway → `reavion-driver mcp`) |
 | `/health` | liveness (`ok`) |
 
 ## 1. Create the service
 
-1. New Railway project → Deploy from GitHub (`cua-agent-desktop`).
-2. Builder: Dockerfile (see `railway.toml`).
+1. New Railway project → Deploy from GitHub (**private** `helderperez-dev/cua-agent-desktop`).
+2. Builder: Dockerfile (see `railway.toml`). First builds compile Rust from `vendor/reavion-driver` (~several minutes).
 3. Generate a public domain; target port **8080** (or whatever `$PORT` Railway assigns — the app reads `PORT`).
+
+Ensure `vendor/reavion-driver` is committed (`./scripts/sync-driver.sh` before push). Control plane `MACHINE_SOURCE_REPO` stays `helderperez-dev/cua-agent-desktop`.
 
 ## 2. Required variables
 
@@ -28,6 +30,8 @@ Optional:
 | Variable | Default | Notes |
 |---|---|---|
 | `MCP_GATEWAY_PORT` | `8200` | Internal only |
+| `VNC_RESOLUTION` | `1280x720` | TigerVNC `-geometry`. Set in Railway and **redeploy** — changing it on a running container does nothing. Prefer 16:9 (`1280x720`) so phone noVNC (`resize=scale`) shows the full desk without crop. |
+| `VNC_COL_DEPTH` | `24` | Color depth for the VNC server |
 
 ## 3. Resources
 
