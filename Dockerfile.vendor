@@ -29,7 +29,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus-x11 \
     ffmpeg \
     firefox-esr \
+    fontconfig \
     fonts-dejavu-core \
+    fonts-noto-core \
+    fonts-noto-mono \
+    unzip \
+    arc-theme \
+    papirus-icon-theme \
     libglib2.0-bin \
     netcat-openbsd \
     procps \
@@ -44,6 +50,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-terminal \
     && apt-get clean \
     && find /var/lib/apt/lists -mindepth 1 -delete
+
+# Modern UI + terminal fonts (Inter / JetBrains Mono).
+RUN set -eux; \
+    mkdir -p /usr/local/share/fonts/reavion; \
+    curl -fsSL -o /tmp/inter.zip \
+      "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip"; \
+    unzip -q /tmp/inter.zip -d /tmp/inter; \
+    find /tmp/inter -type f \( \
+        -name 'InterVariable.ttf' -o \
+        -name 'Inter-Regular.ttf' -o -name 'Inter-Medium.ttf' -o -name 'Inter-SemiBold.ttf' -o -name 'Inter-Bold.ttf' -o \
+        -name 'Inter-Regular.otf' -o -name 'Inter-Medium.otf' -o -name 'Inter-SemiBold.otf' -o -name 'Inter-Bold.otf' \
+      \) -exec cp {} /usr/local/share/fonts/reavion/ \; ; \
+    curl -fsSL -o /tmp/jbmono.zip \
+      "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip"; \
+    unzip -q /tmp/jbmono.zip -d /tmp/jbmono; \
+    find /tmp/jbmono/fonts/ttf -type f \( -name 'JetBrainsMono-Regular.ttf' -o -name 'JetBrainsMono-Medium.ttf' -o -name 'JetBrainsMono-Bold.ttf' \) \
+      -exec cp {} /usr/local/share/fonts/reavion/ \; ; \
+    fc-cache -f /usr/local/share/fonts/reavion; \
+    rm -rf /tmp/inter /tmp/inter.zip /tmp/jbmono /tmp/jbmono.zip
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates \
@@ -70,6 +95,9 @@ COPY vendor/reavion-xfce/src/scripts/ /usr/local/bin/
 COPY vendor/reavion-xfce/vendor/reavion-vnc/ /usr/share/reavion-vnc/
 RUN ln -sfn /usr/share/reavion-vnc /usr/share/novnc
 COPY --chown=reavion:reavion vendor/reavion-xfce/src/xfce/ /home/reavion/.config/xfce4/
+COPY --chown=reavion:reavion vendor/reavion-xfce/src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
+COPY vendor/reavion-xfce/assets/backgrounds/reavion-mountains.jpg /usr/share/backgrounds/reavion/reavion-mountains.jpg
+COPY vendor/reavion-xfce/src/desktop-skel/ /usr/share/reavion-desktop/skel/
 
 RUN chmod +x /usr/local/bin/*.sh \
     && mkdir -p \
@@ -80,8 +108,11 @@ RUN chmod +x /usr/local/bin/*.sh \
         /home/reavion/shared \
         /home/reavion/storage \
         /run/user/1000 \
+        /usr/share/backgrounds/reavion \
+        /usr/share/reavion-desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
+    && printf '1\n' > /usr/share/reavion-desktop/THEME_VERSION \
     && chown -R reavion:reavion /home/reavion /run/user/1000 \
     && chmod 0700 /run/user/1000 \
     && mkdir -p /var/log/supervisor \
@@ -213,6 +244,16 @@ COPY image/Caddyfile /etc/caddy/Caddyfile
 COPY image/reavion-driver.conf /etc/supervisor/conf.d/reavion-driver.conf
 COPY image/mcp-gateway.conf /etc/supervisor/conf.d/mcp-gateway.conf
 COPY image/edge-proxy.conf /etc/supervisor/conf.d/edge-proxy.conf
+
+# Keep noVNC + desktop theme overlays current on the final seat image.
+COPY vendor/reavion-xfce/vendor/reavion-vnc/vnc.html /usr/share/reavion-vnc/vnc.html
+COPY vendor/reavion-xfce/vendor/reavion-vnc/index.html /usr/share/reavion-vnc/index.html
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/styles/base.css /usr/share/reavion-vnc/app/styles/base.css
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/styles/reavion.css /usr/share/reavion-vnc/app/styles/reavion.css
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/ui.js /usr/share/reavion-vnc/app/ui.js
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-white.png /usr/share/reavion-vnc/app/images/reavion-logo-white.png
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-black.png /usr/share/reavion-vnc/app/images/reavion-logo-black.png
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-mark-white.png /usr/share/reavion-vnc/app/images/reavion-mark-white.png
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 

@@ -28,7 +28,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus-x11 \
     ffmpeg \
     firefox-esr \
+    fontconfig \
     fonts-dejavu-core \
+    fonts-noto-core \
+    fonts-noto-mono \
+    unzip \
+    arc-theme \
+    papirus-icon-theme \
     libglib2.0-bin \
     netcat-openbsd \
     procps \
@@ -43,6 +49,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-terminal \
     && apt-get clean \
     && find /var/lib/apt/lists -mindepth 1 -delete
+
+# Modern UI + terminal fonts (Inter / JetBrains Mono) — not always packaged on Bookworm.
+RUN set -eux; \
+    mkdir -p /usr/local/share/fonts/reavion; \
+    curl -fsSL -o /tmp/inter.zip \
+      "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip"; \
+    unzip -q /tmp/inter.zip -d /tmp/inter; \
+    find /tmp/inter -type f \( \
+        -name 'InterVariable.ttf' -o \
+        -name 'Inter-Regular.ttf' -o -name 'Inter-Medium.ttf' -o -name 'Inter-SemiBold.ttf' -o -name 'Inter-Bold.ttf' -o \
+        -name 'Inter-Regular.otf' -o -name 'Inter-Medium.otf' -o -name 'Inter-SemiBold.otf' -o -name 'Inter-Bold.otf' \
+      \) -exec cp {} /usr/local/share/fonts/reavion/ \; ; \
+    curl -fsSL -o /tmp/jbmono.zip \
+      "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip"; \
+    unzip -q /tmp/jbmono.zip -d /tmp/jbmono; \
+    find /tmp/jbmono/fonts/ttf -type f \( -name 'JetBrainsMono-Regular.ttf' -o -name 'JetBrainsMono-Medium.ttf' -o -name 'JetBrainsMono-Bold.ttf' \) \
+      -exec cp {} /usr/local/share/fonts/reavion/ \; ; \
+    fc-cache -f /usr/local/share/fonts/reavion; \
+    rm -rf /tmp/inter /tmp/inter.zip /tmp/jbmono /tmp/jbmono.zip
 
 # CUA-1948: the compromised eMudhra intermediates. Ubuntu's ca-certificates >= 20260816ubuntu0.<release>.1 drops the
 # roots they chain to; Debian has not shipped that yet, so disable both roots explicitly (a no-op once they are gone).
@@ -72,6 +97,9 @@ COPY vendor/reavion-vnc/ /usr/share/reavion-vnc/
 # Compat path some docs still mention
 RUN ln -sfn /usr/share/reavion-vnc /usr/share/novnc
 COPY --chown=reavion:reavion src/xfce/ /home/reavion/.config/xfce4/
+COPY --chown=reavion:reavion src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
+COPY assets/backgrounds/reavion-mountains.jpg /usr/share/backgrounds/reavion/reavion-mountains.jpg
+COPY src/desktop-skel/ /usr/share/reavion-desktop/skel/
 
 RUN chmod +x /usr/local/bin/*.sh \
     && mkdir -p \
@@ -82,8 +110,11 @@ RUN chmod +x /usr/local/bin/*.sh \
         /home/reavion/shared \
         /home/reavion/storage \
         /run/user/1000 \
+        /usr/share/backgrounds/reavion \
+        /usr/share/reavion-desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
+    && printf '1\n' > /usr/share/reavion-desktop/THEME_VERSION \
     && chown -R reavion:reavion /home/reavion /run/user/1000 \
     && chmod 0700 /run/user/1000
 

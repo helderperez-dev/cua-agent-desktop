@@ -1,0 +1,16 @@
+/* Quiet Reavion polish over Arc-Dark — keep minimal. */
+window.background {
+  background-color: #141416;
+}
+
+.xfce4-panel {
+  background-color: rgba(18, 18, 20, 0.94);
+  color: #ececec;
+  border: none;
+  box-shadow: none;
+}
+
+.xfce4-panel .tasklist button,
+.xfce4-panel button {
+  border-radius: 6px;
+}

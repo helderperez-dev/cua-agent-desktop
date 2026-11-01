@@ -123,9 +123,22 @@ COPY image/edge-proxy.conf /etc/supervisor/conf.d/edge-proxy.conf
 
 # Branding overlay on top of XFCE base noVNC tree (logos + connect screen).
 COPY vendor/reavion-xfce/vendor/reavion-vnc/vnc.html /usr/share/reavion-vnc/vnc.html
+COPY vendor/reavion-xfce/vendor/reavion-vnc/index.html /usr/share/reavion-vnc/index.html
 COPY vendor/reavion-xfce/vendor/reavion-vnc/app/styles/base.css /usr/share/reavion-vnc/app/styles/base.css
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/styles/reavion.css /usr/share/reavion-vnc/app/styles/reavion.css
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/ui.js /usr/share/reavion-vnc/app/ui.js
 COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-white.png /usr/share/reavion-vnc/app/images/reavion-logo-white.png
 COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-black.png /usr/share/reavion-vnc/app/images/reavion-logo-black.png
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-mark-white.png /usr/share/reavion-vnc/app/images/reavion-mark-white.png
+
+# Desktop theme overlay (safe if XFCE base already includes them).
+COPY vendor/reavion-xfce/src/scripts/reavion-desktop-theme.sh /usr/local/bin/reavion-desktop-theme.sh
+COPY vendor/reavion-xfce/src/scripts/xstartup.sh /usr/local/bin/xstartup.sh
+COPY vendor/reavion-xfce/assets/backgrounds/reavion-mountains.jpg /usr/share/backgrounds/reavion/reavion-mountains.jpg
+COPY vendor/reavion-xfce/src/desktop-skel/ /usr/share/reavion-desktop/skel/
+COPY --chown=reavion:reavion vendor/reavion-xfce/src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
+RUN chmod 0755 /usr/local/bin/reavion-desktop-theme.sh /usr/local/bin/xstartup.sh \
+ && printf '1\n' > /usr/share/reavion-desktop/THEME_VERSION
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 

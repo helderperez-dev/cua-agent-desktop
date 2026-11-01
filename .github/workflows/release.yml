@@ -86,14 +86,12 @@ jobs:
           DRIVER="${{ steps.ver.outputs.driver_image }}"
           RESOLVED_BASE="$BASE"
 
-          if docker pull "$BASE"; then
-            echo "xfce base available from GHCR"
-          else
-            echo "GHCR xfce unavailable (private ACL) — building from vendor/reavion-xfce"
-            test -f vendor/reavion-xfce/Dockerfile
-            docker build -t "reavion/xfce:ci" -f vendor/reavion-xfce/Dockerfile vendor/reavion-xfce
-            RESOLVED_BASE="reavion/xfce:ci"
-          fi
+          # Always rebuild XFCE from vendor so desktop theming (wallpaper/fonts/xstartup)
+          # ships even when an older GHCR reavion-xfce:main tag still exists.
+          echo "Building XFCE base from vendor/reavion-xfce"
+          test -f vendor/reavion-xfce/Dockerfile
+          docker build -t "reavion/xfce:ci" -f vendor/reavion-xfce/Dockerfile vendor/reavion-xfce
+          RESOLVED_BASE="reavion/xfce:ci"
           echo "desktop_base=${RESOLVED_BASE}" >> "$GITHUB_OUTPUT"
 
           if docker pull "$DRIVER"; then
