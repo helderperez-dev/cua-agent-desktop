@@ -25,6 +25,9 @@
 	}
 
 	handle {
+		# Avoid sticky browser caches of noVNC ui.js after seat image updates.
+		header /app/*.js Cache-Control "no-cache, must-revalidate"
+		header /vnc.html Cache-Control "no-cache, must-revalidate"
 		reverse_proxy 127.0.0.1:6901
 	}
 }
