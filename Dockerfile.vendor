@@ -114,7 +114,11 @@ RUN set -eux; \
     install -d -m 0755 /usr/local/libexec/cua-desktop; \
     ln -sfn /usr/local/libexec/reavion-desktop/reavion-driver /usr/local/libexec/cua-desktop/cua-driver; \
     /usr/local/libexec/reavion-desktop/reavion-driver --version | tee /tmp/reavion-driver-version.txt; \
-    grep -F "reavion-driver ${REAVION_DRIVER_VERSION}" /tmp/reavion-driver-version.txt; \
+    # Pin check only for semver build-args (skip floating tags like main/latest).
+    case "${REAVION_DRIVER_VERSION}" in \
+      main|latest|sha-*|"") ;; \
+      *) grep -F "reavion-driver ${REAVION_DRIVER_VERSION}" /tmp/reavion-driver-version.txt ;; \
+    esac; \
     install -d -o reavion -g reavion -m 0700 /run/user/1000; \
     install -d -o reavion -g reavion -m 0755 /home/reavion/workspace; \
     rm -f /tmp/reavion-driver-version.txt
