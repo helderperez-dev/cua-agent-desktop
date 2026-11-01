@@ -36,7 +36,7 @@ Boot contract for “Chrome opens + agent bind works”:
 
 1. **system D-Bus** — Chrome 150+ SIGTRAPs (exit 133) without it; supervisord runs `dbus-system` before the session bus.
 2. **`fix-chrome-profile`** — chowns the Railway/local profile volume to `reavion` and clears stale `Singleton*` locks after redeploy.
-3. **Chrome wrapper** — `--force-renderer-accessibility`, `--no-sandbox` (expected under `cap_drop: ALL`), and loopback `--remote-debugging-port=9222` so `DevToolsActivePort` exists at startup for `browser_prepare({strategy:{kind:"existing_profile"}})`.
+3. **Chrome wrapper** — `--force-renderer-accessibility`, `--no-sandbox` (expected under `cap_drop: ALL`), non-default `--user-data-dir=…/cdp-userdata` (Chrome ≥136 ignores remote debugging on the default profile path), and loopback `--remote-debugging-port=9222` so CDP listens at startup for `browser_prepare({strategy:{kind:"existing_profile"}})`.
 4. **Driver** — `serve --grant existing-profile` so agents can attach without a separate consent host.
 
 Driver and noVNC share `DISPLAY=:1`.

@@ -30,13 +30,20 @@ EOF
 _chrome_w="${_chrome_w:-1280}"
 _chrome_h="${_chrome_h:-720}"
 
+# Chrome ≥136 ignores --remote-debugging-port on the default user-data-dir
+# (~/.config/google-chrome). Use a nested non-default dir on the same volume so
+# DevTools listens at startup for browser_prepare(existing_profile).
+HOME_DIR="${HOME:-/home/reavion}"
+VOLUME_ROOT="${CHROME_PROFILE_DIR:-${HOME_DIR}/.config/google-chrome}"
+USER_DATA="${CHROME_USER_DATA_DIR:-${VOLUME_ROOT}/cdp-userdata}"
+mkdir -p "$USER_DATA"
+
 # --force-renderer-accessibility: required by reavion-driver on Linux for exact
 # browser bind + semantic snapshots.
 # --no-sandbox: needed under cap_drop ALL; banner is expected, not a bind blocker.
-# --remote-debugging-port: seat Chrome must expose DevToolsActivePort at startup
-# so browser_prepare(existing_profile) can attach without a UI toggle + restart.
-# Loopback only — not published outside the container network namespace.
+# --remote-debugging-port: loopback only — not published outside the container.
 exec "$REAL" \
+  --user-data-dir="$USER_DATA" \
   --no-sandbox \
   --disable-dev-shm-usage \
   --disable-gpu \
