@@ -34,8 +34,27 @@ body {
   background: transparent !important;
 }
 
+/* Session surface — any residual bars match Reavion ink, never stock grey */
 #noVNC_container {
-  background-color: var(--reavion-bg0) !important;
+  background-color: #000 !important;
+}
+
+:root.noVNC_connected,
+:root.noVNC_connected body {
+  background: #000 !important;
+  background-image: none !important;
+}
+
+/* Keep the remote desktop canvas flush in the viewport */
+:root.noVNC_connected #noVNC_container {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+:root.noVNC_connected #noVNC_container > canvas,
+:root.noVNC_connected #noVNC_container canvas {
+  margin: 0 !important;
 }
 
 /* Connect gate — logo + Connect, same look as the old landing */

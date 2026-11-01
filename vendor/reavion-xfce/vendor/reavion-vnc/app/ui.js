@@ -174,7 +174,17 @@ const UI = {
         UI.initSetting('port', port);
         UI.initSetting('encrypt', (window.location.protocol === "https:"));
         UI.initSetting('view_clip', false);
-        UI.initSetting('resize', 'scale');
+        // Edge-to-edge desktop: ask the VNC server to match the browser
+        // (avoids grey letterbox bars from aspect-ratio "scale" fit).
+        UI.initSetting('resize', 'remote');
+        // Migrate browsers that still have the old "scale" default saved.
+        if (WebUtil.readSetting('reavion_fit_v1', '') !== '1') {
+            if (WebUtil.readSetting('resize', 'remote') === 'scale') {
+                WebUtil.writeSetting('resize', 'remote');
+                UI.updateSetting('resize');
+            }
+            WebUtil.writeSetting('reavion_fit_v1', '1');
+        }
         UI.initSetting('quality', 6);
         UI.initSetting('compression', 2);
         UI.initSetting('shared', true);
