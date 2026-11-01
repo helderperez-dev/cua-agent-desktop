@@ -25,6 +25,34 @@
 	}
 
 	handle {
+		# Landing: never expose websockify's source-tree directory listing.
+		@root path /
+		redir @root /vnc.html 302
+
+		# Keep repo metadata / tooling off the public edge.
+		@sensitive {
+			path /.git*
+			path /.github*
+			path /tests*
+			path /docs*
+			path /snap*
+			path /po*
+			path /Dockerfile*
+			path /package.json
+			path /package-lock.json
+			path /eslint.config.mjs
+			path /karma.conf.js
+			path /.gitignore
+			path /.gitmodules
+			path /AUTHORS
+			path /LICENSE.txt
+			path /NOTICE
+			path /README.md
+			path /VERSION
+			path /*.tgz
+		}
+		respond @sensitive "Not Found" 404
+
 		# Avoid sticky browser caches of noVNC ui.js after seat image updates.
 		header /app/*.js Cache-Control "no-cache, must-revalidate"
 		header /vnc.html Cache-Control "no-cache, must-revalidate"
