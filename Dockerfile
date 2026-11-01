@@ -150,7 +150,7 @@ RUN chmod 0755 /usr/local/bin/reavion-desktop-theme.sh /usr/local/bin/xstartup.s
       && apt-get install -y --no-install-recommends plank \
       && rm -rf /var/lib/apt/lists/*; \
     fi \
- && printf '4\n' > /usr/share/reavion-desktop/THEME_VERSION
+ && printf '5\n' > /usr/share/reavion-desktop/THEME_VERSION
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 

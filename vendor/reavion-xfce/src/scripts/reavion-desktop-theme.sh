@@ -3,7 +3,7 @@
 # Safe for persistent VOLUME /home/reavion — reseeds when THEME_VERSION bumps.
 set -euo pipefail
 
-THEME_VERSION="4"
+THEME_VERSION="5"
 STAMP="${HOME}/.config/reavion-desktop-theme.version"
 SHARE="/usr/share/reavion-desktop"
 WALLPAPER="/usr/share/backgrounds/reavion/reavion-mountains.jpg"
@@ -13,7 +13,6 @@ mkdir -p \
   "${HOME}/.config/xfce4/terminal" \
   "${HOME}/.config/xfce4/xfconf/xfce-perchannel-xml" \
   "${HOME}/.config/gtk-3.0" \
-  "${HOME}/.config/plank/dock1/launchers" \
   "${HOME}/.config/autostart" \
   "$(dirname "${STAMP}")"
 
@@ -23,43 +22,34 @@ if [[ "${current}" != "${THEME_VERSION}" || "${REAVION_FORCE_THEME:-0}" == "1" ]
   need_seed=1
 fi
 
-pick_browser_desktop() {
-  for cand in \
-    /usr/share/applications/google-chrome.desktop \
-    /usr/share/applications/google-chrome-stable.desktop \
-    /usr/share/applications/firefox-esr.desktop \
-    /usr/share/applications/firefox.desktop
-  do
-    if [[ -f "${cand}" ]]; then
-      printf '%s\n' "${cand}"
-      return 0
-    fi
-  done
-  printf '%s\n' "/usr/share/applications/firefox-esr.desktop"
-}
-
 if [[ "${need_seed}" == "1" ]]; then
   if [[ -d "${SKEL}/xfce" ]]; then
     cp -a "${SKEL}/xfce/terminal/." "${HOME}/.config/xfce4/terminal/" 2>/dev/null || true
-    cp -a "${SKEL}/xfce/xfconf/." "${HOME}/.config/xfce4/xfconf/" 2>/dev/null || true
+    # Seed xfconf channels except panel — let XFCE keep/repair a stock panel.
+    if [[ -d "${SKEL}/xfce/xfconf/xfce-perchannel-xml" ]]; then
+      for f in "${SKEL}/xfce/xfconf/xfce-perchannel-xml/"*.xml; do
+        base="$(basename "${f}")"
+        if [[ "${base}" == "xfce4-panel.xml" ]]; then
+          continue
+        fi
+        cp -a "${f}" "${HOME}/.config/xfce4/xfconf/xfce-perchannel-xml/"
+      done
+    fi
   fi
   if [[ -d "${SKEL}/gtk-3.0" ]]; then
     cp -a "${SKEL}/gtk-3.0/." "${HOME}/.config/gtk-3.0/"
   fi
-  if [[ -d "${SKEL}/plank" ]]; then
-    cp -a "${SKEL}/plank/." "${HOME}/.config/plank/"
-  fi
-  if [[ -d "${SKEL}/autostart" ]]; then
-    cp -a "${SKEL}/autostart/." "${HOME}/.config/autostart/"
-  fi
 
-  browser="$(pick_browser_desktop)"
-  printf '[PlankDockItemPreferences]\nLauncher=file://%s\n' "${browser}" \
-    > "${HOME}/.config/plank/dock1/launchers/browser.dockitem"
+  # Tear down the broken Plank experiment (giant translucent bar on VNC).
+  pkill -u "$(id -u)" -x plank 2>/dev/null || true
+  rm -rf "${HOME}/.config/plank"
+  rm -f "${HOME}/.config/autostart/plank.desktop"
 
-  # Prefer Chrome helper when seat image provides it; do not clobber an existing Chrome helpers.rc.
+  # Drop a corrupted custom panel so XFCE recreates a normal top/bottom panel.
+  rm -f "${HOME}/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
+
   if [[ ! -f "${HOME}/.config/xfce4/helpers.rc" ]]; then
-    if [[ "${browser}" == *chrome* ]]; then
+    if [[ -f /usr/share/applications/google-chrome.desktop ]]; then
       printf 'WebBrowser=google-chrome\nTerminalEmulator=xfce4-terminal\n' \
         > "${HOME}/.config/xfce4/helpers.rc"
     else
@@ -71,9 +61,8 @@ if [[ "${need_seed}" == "1" ]]; then
   printf '%s\n' "${THEME_VERSION}" > "${STAMP}"
 fi
 
-# Live display tweaks when X is up. Safe every call.
+# Live display tweaks when X is up.
 if command -v xfconf-query >/dev/null 2>&1 && xset q >/dev/null 2>&1; then
-  # Always reinforce look (volume homes / late xfsettingsd).
   xfconf-query -c xsettings -p /Gtk/FontName -n -t string -s "Inter 10" 2>/dev/null || true
   xfconf-query -c xsettings -p /Gtk/MonospaceFontName -n -t string -s "JetBrains Mono 11" 2>/dev/null || true
   xfconf-query -c xsettings -p /Net/ThemeName -n -t string -s "Arc-Dark" 2>/dev/null || true
@@ -82,13 +71,12 @@ if command -v xfconf-query >/dev/null 2>&1 && xset q >/dev/null 2>&1; then
   xfconf-query -c xfwm4 -p /general/title_font -n -t string -s "Inter Bold 10" 2>/dev/null || true
   xfconf-query -c xfwm4 -p /general/use_compositing -n -t bool -s true 2>/dev/null || true
 
-  # Quiet desktop — no Home / File System icons.
   xfconf-query -c xfce4-desktop -p /desktop-icons/style -n -t int -s 0 2>/dev/null || true
   xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-home -n -t bool -s false 2>/dev/null || true
   xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-filesystem -n -t bool -s false 2>/dev/null || true
   xfconf-query -c xfce4-desktop -p /desktop-icons/file-icons/show-trash -n -t bool -s false 2>/dev/null || true
 
-  # Applications menu → Reavion mark (plugin id may vary on old volumes).
+  # Prefer Reavion mark on Applications menu when that plugin exists.
   while IFS= read -r prop; do
     case "${prop}" in
       /plugins/plugin-*/button-icon)
@@ -117,11 +105,9 @@ if command -v xfconf-query >/dev/null 2>&1 && xset q >/dev/null 2>&1; then
     done
   fi
 
-  # Ensure Plank is running (autostart can race on first session).
-  if command -v plank >/dev/null 2>&1; then
-    if ! pgrep -u "$(id -u)" -x plank >/dev/null 2>&1; then
-      nohup plank >/dev/null 2>&1 &
-    fi
+  # Never leave a stray Plank process painting over the desktop.
+  if pgrep -u "$(id -u)" -x plank >/dev/null 2>&1; then
+    pkill -u "$(id -u)" -x plank 2>/dev/null || true
   fi
 fi
 
