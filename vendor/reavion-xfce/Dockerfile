@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     arc-theme \
     papirus-icon-theme \
+    plank \
     libglib2.0-bin \
     netcat-openbsd \
     procps \
@@ -99,6 +100,9 @@ RUN ln -sfn /usr/share/reavion-vnc /usr/share/novnc
 COPY --chown=reavion:reavion src/xfce/ /home/reavion/.config/xfce4/
 COPY --chown=reavion:reavion src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
 COPY assets/backgrounds/reavion-mountains.jpg /usr/share/backgrounds/reavion/reavion-mountains.jpg
+COPY assets/icons/reavion-mark.png /usr/share/icons/hicolor/48x48/apps/reavion-mark.png
+COPY assets/icons/reavion-mark.png /usr/share/pixmaps/reavion-mark.png
+COPY assets/applications/reavion-apps.desktop /usr/share/applications/reavion-apps.desktop
 COPY src/desktop-skel/ /usr/share/reavion-desktop/skel/
 
 RUN chmod +x /usr/local/bin/*.sh \
@@ -112,9 +116,12 @@ RUN chmod +x /usr/local/bin/*.sh \
         /run/user/1000 \
         /usr/share/backgrounds/reavion \
         /usr/share/reavion-desktop \
+        /usr/share/icons/hicolor/48x48/apps \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
-    && printf '3\n' > /usr/share/reavion-desktop/THEME_VERSION \
+    && cp -a /usr/share/reavion-desktop/skel/autostart/. /home/reavion/.config/autostart/ 2>/dev/null || true \
+    && printf '4\n' > /usr/share/reavion-desktop/THEME_VERSION \
+    && gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true \
     && chown -R reavion:reavion /home/reavion /run/user/1000 \
     && chmod 0700 /run/user/1000
 

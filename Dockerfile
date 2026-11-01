@@ -135,10 +135,22 @@ COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-mark-white.png /u
 COPY vendor/reavion-xfce/src/scripts/reavion-desktop-theme.sh /usr/local/bin/reavion-desktop-theme.sh
 COPY vendor/reavion-xfce/src/scripts/xstartup.sh /usr/local/bin/xstartup.sh
 COPY vendor/reavion-xfce/assets/backgrounds/reavion-mountains.jpg /usr/share/backgrounds/reavion/reavion-mountains.jpg
+COPY vendor/reavion-xfce/assets/icons/reavion-mark.png /usr/share/icons/hicolor/48x48/apps/reavion-mark.png
+COPY vendor/reavion-xfce/assets/icons/reavion-mark.png /usr/share/pixmaps/reavion-mark.png
+COPY vendor/reavion-xfce/assets/applications/reavion-apps.desktop /usr/share/applications/reavion-apps.desktop
 COPY vendor/reavion-xfce/src/desktop-skel/ /usr/share/reavion-desktop/skel/
 COPY --chown=reavion:reavion vendor/reavion-xfce/src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
 RUN chmod 0755 /usr/local/bin/reavion-desktop-theme.sh /usr/local/bin/xstartup.sh \
- && printf '3\n' > /usr/share/reavion-desktop/THEME_VERSION
+ && mkdir -p /usr/share/icons/hicolor/48x48/apps /home/reavion/.config/autostart \
+ && cp -a /usr/share/reavion-desktop/skel/autostart/. /home/reavion/.config/autostart/ 2>/dev/null || true \
+ && chown -R reavion:reavion /home/reavion/.config/autostart \
+ && gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true \
+ && if ! command -v plank >/dev/null 2>&1; then \
+      apt-get update \
+      && apt-get install -y --no-install-recommends plank \
+      && rm -rf /var/lib/apt/lists/*; \
+    fi \
+ && printf '4\n' > /usr/share/reavion-desktop/THEME_VERSION
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 

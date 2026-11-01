@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Reavion
+Comment=Applications
+Exec=xfce4-appfinder
+Icon=reavion-mark
+Terminal=false
+Categories=Utility;
+StartupNotify=true
