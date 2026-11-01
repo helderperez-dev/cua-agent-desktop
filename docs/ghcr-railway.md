@@ -1,48 +1,64 @@
-# GHCR + Railway cutover
+# Seat images: Docker Hub pull vs scratch build
 
-## Done in CI
+## Toggle (control plane)
 
-- `REAVION_DISPATCH_TOKEN` set on cascade repos (`repo` + `write:packages`)
-- Seat/images Actions log into GHCR with that token so private sibling images pull
-- Control plane defaults: `MACHINE_SOURCE_IMAGE=ghcr.io/helderperez-dev/reavion-desktop:main`
-- Volume remount helper: `reavion-app-backend/scripts/migrate_volume_mounts.py`
+One env var on `reavion-app-backend`:
 
-## You still need (manual, ~2 minutes)
+| Mode | `MACHINE_SOURCE_IMAGE` | What Railway does |
+|---|---|---|
+| **Fast** | `docker.io/<hub-user>/reavion-desktop:main` | Pull public Hub image (no build) |
+| **Scratch** | empty | Clone `MACHINE_SOURCE_REPO` and build `Dockerfile.vendor` |
 
-### 1. Optional: make packages public
+Switching modes: change the variable, redeploy the backend, then provision new seats. Existing seats keep their current source until recreated.
 
-Opened package settings tabs. For each of `reavion-desktop`, `reavion-xfce`, `reavion-driver`, `reavion-vnc`:
+## Docker Hub publish (Hobby-friendly)
+
+Seat release workflow ([`.github/workflows/release.yml`](../.github/workflows/release.yml)) pushes to GHCR and, when secrets are set, also to Docker Hub:
+
+| Secret | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | Hub namespace (e.g. `helderperez`) |
+| `DOCKERHUB_TOKEN` | Hub access token with read/write |
+
+Published tags: `main` / version tag, `latest`, `sha-<12>`.
+
+Keep the Hub repo **public** so Railway Hobby can pull without registry credentials.
+
+Control plane production:
+
+```env
+MACHINE_SOURCE_IMAGE=docker.io/<hub-user>/reavion-desktop:main
+MACHINE_SOURCE_REPO=helderperez-dev/cua-agent-desktop
+```
+
+## GHCR (CI / cascade)
+
+GHCR remains the cascade registry for `reavion-xfce`, `reavion-driver`, `reavion-vnc`, and internal desktop tags. Private GHCR pulls on Railway need **Pro** registry credentials or public packages — prefer public Docker Hub for seat deploys on Hobby.
+
+### Optional: make GHCR packages public
+
+For each of `reavion-desktop`, `reavion-xfce`, `reavion-driver`, `reavion-vnc`:
 
 Package settings → Danger Zone → Change visibility → **Public**
 
-(OAuth tokens cannot change visibility via API; UI or a classic PAT is required. Public is irreversible.)
-
-### 2. Railway registry credentials
-
-Template / seat service → Settings → add private registry:
+### Optional: Railway private registry (Pro)
 
 | Field | Value |
 |---|---|
 | Host | `ghcr.io` |
 | Username | `helderperez-dev` |
-| Password | GitHub PAT with `read:packages` (or reuse dispatch token) |
+| Password | GitHub PAT with `read:packages` |
 
-Point the service at image `ghcr.io/helderperez-dev/reavion-desktop:main` (or rely on control-plane `MACHINE_SOURCE_IMAGE`).
+## Scratch path notes
 
-### 3. Volume remount + API token
+- Repo `cua-agent-desktop` must be cloneable by Railway (public, or connected GitHub App).
+- Control plane sets `dockerfilePath=Dockerfile.vendor` after create when image is empty.
+- Repo [`railway.toml`](../railway.toml) also pins `dockerfilePath = "Dockerfile.vendor"`.
 
-1. Put `RAILWAY_API_TOKEN=...` in `reavion-app-backend/.env` (Railway → Account → Tokens).
+## Volume remount
+
+1. Put `RAILWAY_API_TOKEN=...` in `reavion-app-backend/.env`.
 2. Dry-run: `cd reavion-app-backend && python scripts/migrate_volume_mounts.py`
 3. Apply: `python scripts/migrate_volume_mounts.py --apply`  
    **Warning:** recreate mounts are empty — copy Chrome profile out first if you need cookies.
-
 4. Redeploy seats after remount.
-
-## Railway Hobby workaround (active)
-
-Private GHCR pulls need Railway **Pro** registry credentials. Until packages are public or Pro is enabled:
-
-- Seats/template build from GitHub with `dockerfilePath=Dockerfile.vendor` (no GHCR `FROM`)
-- Control plane: leave `MACHINE_SOURCE_IMAGE` empty so new seats use `MACHINE_SOURCE_REPO`
-- `cua-agent-desktop` was set **public** so Railway can clone; GHCR packages remain private
-

@@ -22,6 +22,8 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: helderperez-dev/reavion-desktop
+  # Public Hobby-friendly pull target (set DOCKERHUB_USERNAME + DOCKERHUB_TOKEN repo secrets).
+  DOCKERHUB_IMAGE: reavion-desktop
 
 jobs:
   build-push:
@@ -46,6 +48,13 @@ jobs:
           echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
           echo "desktop_base=${REGISTRY}/helderperez-dev/reavion-xfce:${XFCE_TAG}" >> "$GITHUB_OUTPUT"
           echo "driver_image=${REGISTRY}/helderperez-dev/reavion-driver:${DRIVER_VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ -n "${{ secrets.DOCKERHUB_USERNAME }}" && -n "${{ secrets.DOCKERHUB_TOKEN }}" ]]; then
+            echo "dockerhub=true" >> "$GITHUB_OUTPUT"
+            echo "dockerhub_image=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${DOCKERHUB_IMAGE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "dockerhub=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::DOCKERHUB_USERNAME/TOKEN unset — skipping Docker Hub publish (GHCR only)"
+          fi
 
       # Owner PAT/oauth (REAVION_DISPATCH_TOKEN) can pull private sibling packages;
       # GITHUB_TOKEN alone cannot read other repos' private GHCR images.
@@ -54,6 +63,13 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.REAVION_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: steps.ver.outputs.dockerhub == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # Use the docker driver so local vendor-built base tags are visible to subsequent builds.
       - uses: docker/setup-buildx-action@v3
@@ -90,6 +106,33 @@ jobs:
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
+      - name: Build tag list
+        id: tags
+        if: steps.df.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          TAGS=$(cat <<EOF
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.desktop_tag }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.sha_tag }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          EOF
+          )
+          if [[ "${{ steps.ver.outputs.dockerhub }}" == "true" ]]; then
+            HUB="${{ steps.ver.outputs.dockerhub_image }}"
+            TAGS=$(cat <<EOF
+          $TAGS
+          ${HUB}:${{ steps.ver.outputs.desktop_tag }}
+          ${HUB}:${{ steps.ver.outputs.sha_tag }}
+          ${HUB}:latest
+          EOF
+          )
+          fi
+          {
+            echo "list<<EOF"
+            echo "$TAGS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v6
         if: steps.df.outputs.skip != 'true'
         with:
@@ -101,10 +144,7 @@ jobs:
             DESKTOP_BASE=${{ steps.df.outputs.desktop_base }}
             DRIVER_IMAGE=${{ steps.df.outputs.driver_image }}
             REAVION_DRIVER_VERSION=${{ steps.ver.outputs.driver_version }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.desktop_tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.sha_tag }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ steps.tags.outputs.list }}
 
       - name: Make reavion-desktop publicly pullable (Railway)
         if: steps.df.outputs.skip != 'true'
