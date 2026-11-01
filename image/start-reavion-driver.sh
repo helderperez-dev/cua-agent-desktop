@@ -2,7 +2,7 @@
 # Wait for XFCE/VNC DISPLAY=:1, then start reavion-driver serve on the same display.
 set -euo pipefail
 
-export HOME="${HOME:-/home/cua}"
+export HOME="${HOME:-/home/reavion}"
 export DISPLAY="${DISPLAY:-:1}"
 export CUA_DRIVER_RS_TELEMETRY_ENABLED="${CUA_DRIVER_RS_TELEMETRY_ENABLED:-0}"
 export REAVION_DRIVER_RS_TELEMETRY_ENABLED="${REAVION_DRIVER_RS_TELEMETRY_ENABLED:-0}"

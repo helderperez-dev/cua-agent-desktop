@@ -3,7 +3,7 @@ set -euo pipefail
 # shellcheck source=common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-echo "=== cua-agent-desktop status ==="
+echo "=== reavion-desktop status ==="
 echo "runtime:   ${RUNTIME}"
 echo "container: ${CONTAINER}"
 
@@ -48,13 +48,13 @@ echo "--- supervisor ---"
 
 echo
 echo "--- reavion-driver ---"
-if "$RUNTIME" exec -u cua "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
+if "$RUNTIME" exec -u reavion "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
   echo "socket:    ${SOCKET} (ready)"
 else
   echo "socket:    ${SOCKET} (MISSING)"
 fi
 
-if "$RUNTIME" exec -u cua -e HOME=/home/cua "$CONTAINER" "$DRIVER" --version 2>/dev/null; then
+if "$RUNTIME" exec -u reavion -e HOME=/home/reavion "$CONTAINER" "$DRIVER" --version 2>/dev/null; then
   :
 else
   echo "driver:    could not run ${DRIVER} --version"

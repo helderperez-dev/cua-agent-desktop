@@ -2,7 +2,7 @@
 # Expose reavion-driver MCP over Streamable HTTP + SSE for remote clients.
 set -euo pipefail
 
-export HOME="${HOME:-/home/cua}"
+export HOME="${HOME:-/home/reavion}"
 export DISPLAY="${DISPLAY:-:1}"
 export CUA_DRIVER_RS_TELEMETRY_ENABLED="${CUA_DRIVER_RS_TELEMETRY_ENABLED:-0}"
 export REAVION_DRIVER_RS_TELEMETRY_ENABLED="${REAVION_DRIVER_RS_TELEMETRY_ENABLED:-0}"

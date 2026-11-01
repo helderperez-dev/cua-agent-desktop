@@ -10,11 +10,23 @@ One service runs the full stack: XFCE desktop, Reavion Driver, noVNC, and a **re
 
 ## 1. Create the service
 
-1. New Railway project → Deploy from GitHub (**private** `helderperez-dev/cua-agent-desktop`).
-2. Builder: Dockerfile (see `railway.toml`). First builds compile Rust from `vendor/reavion-driver` (~several minutes).
-3. Generate a public domain; target port **8080** (or whatever `$PORT` Railway assigns — the app reads `PORT`).
+**Preferred (cascade):** control plane sets `MACHINE_SOURCE_IMAGE=ghcr.io/helderperez-dev/reavion-desktop:main` so seats pull a prebuilt image (no Rust compile on Railway). Authenticate Railway to GHCR for the private package.
 
-Ensure `vendor/reavion-driver` is committed (`./scripts/sync-driver.sh` before push). Control plane `MACHINE_SOURCE_REPO` stays `helderperez-dev/cua-agent-desktop`.
+**Fallback:** Deploy from GitHub (**private** `helderperez-dev/cua-agent-desktop`) with `Dockerfile.vendor` (compiles `vendor/reavion-driver`).
+
+1. Generate a public domain; target port **8080** (or whatever `$PORT` Railway assigns — the app reads `PORT`).
+2. Control plane `MACHINE_SOURCE_REPO` stays `helderperez-dev/cua-agent-desktop` when not using the GHCR image.
+
+### Volume path migration (`cua` → `reavion`)
+
+Existing seats that mounted `/home/cua/...` must be updated **once** when rolling images that use user `reavion` (UID still `1000`):
+
+| Old mount | New mount |
+|---|---|
+| `/home/cua/.config/google-chrome` | `/home/reavion/.config/google-chrome` |
+| `/home/cua/workspace` | `/home/reavion/workspace` |
+
+Update Railway volume mount paths (and `MACHINE_VOLUME_MOUNTS` on the control plane) before or together with the image cutover so Chrome profile / workspace data keep attaching.
 
 ## 2. Required variables
 
@@ -37,8 +49,8 @@ Optional:
 
 - Memory: **≥ 4 GB** (XFCE + Chrome)
 - Persistent volumes (recommended):
-  - mount → `/home/cua/.config/google-chrome` (cookies / profile)
-  - mount → `/home/cua/workspace` (shared files)
+  - mount → `/home/reavion/.config/google-chrome` (cookies / profile)
+  - mount → `/home/reavion/workspace` (shared files)
 
 ## 4. Connect the viewer
 

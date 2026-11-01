@@ -13,7 +13,7 @@ if [ -f "${ROOT_DIR}/.env" ]; then
   set +a
 fi
 
-echo "Starting cua-agent-desktop..."
+echo "Starting reavion-desktop..."
 compose up -d
 
 echo "Waiting for Cua socket (${SOCKET})..."
@@ -22,7 +22,7 @@ ready=0
 while (( SECONDS < deadline )); do
   # Run as cua: with cap_drop ALL, root lacks DAC_OVERRIDE on /run/user/1000.
   if container_running \
-    && "$RUNTIME" exec -u cua "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
+    && "$RUNTIME" exec -u reavion "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
     ready=1
     break
   fi

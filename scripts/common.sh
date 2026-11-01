@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 RUNTIME="${CUA_RUNTIME:-docker}"
-CONTAINER="${CUA_CONTAINER:-cua-agent-desktop}"
+CONTAINER="${CUA_CONTAINER:-${REAVION_CONTAINER:-reavion-desktop}}"
 SOCKET="${REAVION_SOCKET:-${CUA_SOCKET:-/run/user/1000/reavion.sock}}"
 DRIVER="${REAVION_DRIVER:-${CUA_DRIVER:-/usr/local/libexec/reavion-desktop/reavion-driver}}"
 COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"

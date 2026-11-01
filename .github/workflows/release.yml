@@ -1,0 +1,71 @@
+name: Release desktop
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  repository_dispatch:
+    types: [reavion-xfce-release, reavion-driver-release]
+  workflow_dispatch:
+    inputs:
+      xfce_tag:
+        description: reavion-xfce tag
+        default: main
+      driver_version:
+        description: reavion-driver tag
+        default: main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: helderperez-dev/reavion-desktop
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve versions
+        id: ver
+        run: |
+          XFCE_TAG="${{ github.event.client_payload.xfce_tag || inputs.xfce_tag || 'main' }}"
+          DRIVER_VERSION="${{ github.event.client_payload.driver_version || inputs.driver_version || 'main' }}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            DESKTOP_TAG="${GITHUB_REF#refs/tags/}"
+          else
+            DESKTOP_TAG="main"
+          fi
+          SHA_TAG="sha-${GITHUB_SHA::12}"
+          echo "xfce_tag=${XFCE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "driver_version=${DRIVER_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "desktop_tag=${DESKTOP_TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
+          echo "desktop_base=${REGISTRY}/helderperez-dev/reavion-xfce:${XFCE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "driver_image=${REGISTRY}/helderperez-dev/reavion-driver:${DRIVER_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            DESKTOP_BASE=${{ steps.ver.outputs.desktop_base }}
+            DRIVER_IMAGE=${{ steps.ver.outputs.driver_image }}
+            REAVION_DRIVER_VERSION=${{ steps.ver.outputs.driver_version }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.desktop_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.sha_tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest

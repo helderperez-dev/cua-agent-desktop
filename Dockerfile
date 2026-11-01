@@ -1,69 +1,37 @@
-# cua-agent-desktop: XFCE sandbox + reavion-driver + noVNC + remote MCP/VNC edge
+# reavion-desktop (published as ghcr.io/helderperez-dev/reavion-desktop)
+# Repo: helderperez-dev/cua-agent-desktop
 #
-# Desktop base: reavion/xfce (from helderperez-dev/reavion-images).
-# Driver: built from vendor/reavion-driver (scripts/sync-driver.sh).
-#
-# Local:  ./scripts/build.sh after: (cd ../reavion-images && ./scripts/build.sh xfce)
-# Override: docker compose build --build-arg DESKTOP_BASE=trycua/xfce-cua:…
+# Default: pull prebuilt XFCE base + reavion-driver from GHCR (cascade CI).
+# Local override examples:
+#   DESKTOP_BASE=reavion/xfce:local
+#   DRIVER_IMAGE=localhost/reavion-driver:local
+# Vendor compile fallback: Dockerfile.vendor (Railway self-contained until GHCR pull works).
 
-ARG DESKTOP_BASE=reavion/xfce:local
-ARG RUST_VERSION=1.97.1
+ARG DESKTOP_BASE=ghcr.io/helderperez-dev/reavion-xfce:main
+ARG DRIVER_IMAGE=ghcr.io/helderperez-dev/reavion-driver:main
 
-# ---------------------------------------------------------------------------
-# Stage 1: compile reavion-driver for Linux
-# ---------------------------------------------------------------------------
-FROM docker.io/library/rust:${RUST_VERSION}-bookworm AS driver-builder
+FROM ${DRIVER_IMAGE} AS driver
 
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-      pkg-config \
-      clang \
-      libclang-dev \
-      cmake \
-      libx11-dev \
-      libxtst-dev \
-      libxfixes-dev \
-      libxi-dev \
-      libxrandr-dev \
-      libxcomposite-dev \
-      libxdamage-dev \
-      libxext-dev \
-      libxkbcommon-dev \
-      libdbus-1-dev \
-      libwayland-dev \
-      libpipewire-0.3-dev \
-    ; \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /src
-COPY vendor/reavion-driver/rust /src
-
-RUN set -eux; \
-    cargo build --locked --release -p reavion-driver; \
-    install -D -m 0755 target/release/reavion-driver /out/reavion-driver; \
-    /out/reavion-driver --version
-
-# ---------------------------------------------------------------------------
-# Stage 2: desktop runtime image
-# ---------------------------------------------------------------------------
 FROM ${DESKTOP_BASE}
 
 ARG TARGETARCH
 ARG CADDY_VERSION=2.10.2
-ARG REAVION_DRIVER_VERSION=0.38.0
+ARG REAVION_DRIVER_VERSION=main
 ARG DESKTOP_BASE
+ARG DRIVER_IMAGE
 
-LABEL org.opencontainers.image.title="cua-agent-desktop" \
+LABEL org.opencontainers.image.title="reavion-desktop" \
       org.opencontainers.image.description="Isolated Linux desktop for AI agents via Reavion Driver MCP + noVNC" \
+      org.opencontainers.image.source="https://github.com/helderperez-dev/cua-agent-desktop" \
+      reavion.desktop.managed="true" \
+      reavion.desktop.driver="reavion-driver" \
+      reavion.desktop.driver.version="${REAVION_DRIVER_VERSION}" \
+      reavion.desktop.base="${DESKTOP_BASE}" \
       cua.agent.desktop.managed="true" \
       cua.agent.desktop.driver="reavion-driver" \
-      cua.agent.desktop.driver.version="0.38.0" \
+      cua.agent.desktop.driver.version="${REAVION_DRIVER_VERSION}" \
       cua.agent.desktop.base="${DESKTOP_BASE}"
 
-# Edge / remote defaults (Railway injects PORT; set MCP_API_KEY in the service)
-# VNC_RESOLUTION is read by base start-vnc.sh (-geometry). 1280x720 scales cleanly
-# into phone WebViews with noVNC resize=scale; change only takes effect on container start.
 ENV PORT=8080 \
     MCP_GATEWAY_PORT=8200 \
     MCP_API_KEY= \
@@ -73,6 +41,7 @@ ENV PORT=8080 \
     REAVION_DRIVER_RS_TELEMETRY_ENABLED=0 \
     VNC_RESOLUTION=1280x720 \
     VNC_COL_DEPTH=24 \
+    HOME=/home/reavion \
     REAVION_SOCKET=/run/user/1000/reavion.sock \
     REAVION_DRIVER=/usr/local/libexec/reavion-desktop/reavion-driver \
     CUA_SOCKET=/run/user/1000/reavion.sock \
@@ -80,7 +49,6 @@ ENV PORT=8080 \
 
 USER root
 
-# --- Node (supergateway) + Caddy (single public PORT) ---
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates curl nodejs npm; \
@@ -99,9 +67,8 @@ RUN set -eux; \
     npm install -g "supergateway@4.2.1"; \
     rm -f /tmp/caddy.tgz; \
     rm -rf /var/lib/apt/lists/*; \
-    install -d -o cua -g cua -m 0755 /home/cua/.npm
+    install -d -o reavion -g reavion -m 0755 /home/reavion/.npm
 
-# Google Chrome (default browser). Official .deb for amd64 + arm64.
 COPY image/google-chrome-wrapper.sh /usr/local/bin/google-chrome-wrapper.sh
 RUN set -eux; \
     case "${TARGETARCH}" in \
@@ -126,26 +93,24 @@ RUN set -eux; \
     fi; \
     update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/local/bin/google-chrome-wrapper.sh 200; \
     update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/local/bin/google-chrome-wrapper.sh 200; \
-    install -d -o cua -g cua -m 0700 /home/cua/.config/google-chrome; \
-    install -d -o cua -g cua /home/cua/.config/xfce4; \
+    install -d -o reavion -g reavion -m 0700 /home/reavion/.config/google-chrome; \
+    install -d -o reavion -g reavion /home/reavion/.config/xfce4; \
     printf 'WebBrowser=google-chrome\nTerminalEmulator=xfce4-terminal\n' \
-      > /home/cua/.config/xfce4/helpers.rc; \
-    chown cua:cua /home/cua/.config/xfce4/helpers.rc; \
+      > /home/reavion/.config/xfce4/helpers.rc; \
+    chown reavion:reavion /home/reavion/.config/xfce4/helpers.rc; \
     google-chrome-stable --version
 
-# Install Reavion Driver binary built in stage 1.
-COPY --from=driver-builder /out/reavion-driver /usr/local/libexec/reavion-desktop/reavion-driver
+# Prebuilt binary from GHCR (or local DRIVER_IMAGE)
+COPY --from=driver /out/reavion-driver /usr/local/libexec/reavion-desktop/reavion-driver
 RUN set -eux; \
     chmod 0755 /usr/local/libexec/reavion-desktop/reavion-driver; \
     ln -sfn /usr/local/libexec/reavion-desktop/reavion-driver /usr/local/bin/reavion-driver; \
-    # Compat shims for scripts that still say cua-driver
     ln -sfn /usr/local/libexec/reavion-desktop/reavion-driver /usr/local/bin/cua-driver; \
     install -d -m 0755 /usr/local/libexec/cua-desktop; \
     ln -sfn /usr/local/libexec/reavion-desktop/reavion-driver /usr/local/libexec/cua-desktop/cua-driver; \
     /usr/local/libexec/reavion-desktop/reavion-driver --version | tee /tmp/reavion-driver-version.txt; \
-    grep -F "reavion-driver ${REAVION_DRIVER_VERSION}" /tmp/reavion-driver-version.txt; \
-    install -d -o cua -g cua -m 0700 /run/user/1000; \
-    install -d -o cua -g cua -m 0755 /home/cua/workspace; \
+    install -d -o reavion -g reavion -m 0700 /run/user/1000; \
+    install -d -o reavion -g reavion -m 0755 /home/reavion/workspace; \
     rm -f /tmp/reavion-driver-version.txt
 
 COPY image/start-reavion-driver.sh /usr/local/bin/start-reavion-driver.sh
@@ -176,4 +141,5 @@ RUN chmod 0755 \
       printf '\n[include]\nfiles = /etc/supervisor/conf.d/*.conf\n' >> /etc/supervisor/supervisord.conf; \
     fi
 
+WORKDIR /home/reavion
 EXPOSE 8080

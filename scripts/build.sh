@@ -3,11 +3,18 @@ set -euo pipefail
 # shellcheck source=common.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 
-if [ ! -f "$ROOT_DIR/vendor/reavion-driver/rust/Cargo.toml" ]; then
-  echo "vendor/reavion-driver missing — syncing from sibling checkout..."
-  "$ROOT_DIR/scripts/sync-driver.sh"
+DESKTOP_BASE="${DESKTOP_BASE:-reavion/xfce:local}"
+DRIVER_IMAGE="${DRIVER_IMAGE:-localhost/reavion-driver:local}"
+
+# Ensure local driver OCI image exists when not pulling from GHCR.
+if [[ "$DRIVER_IMAGE" == localhost/* ]] || [[ "$DRIVER_IMAGE" == reavion-driver:* ]]; then
+  if ! docker image inspect "$DRIVER_IMAGE" >/dev/null 2>&1; then
+    echo "Local DRIVER_IMAGE missing — building ${DRIVER_IMAGE}..."
+    DRIVER_IMAGE="$DRIVER_IMAGE" "$ROOT_DIR/scripts/build-driver-image.sh"
+  fi
 fi
 
-echo "Building cua-agent-desktop (runtime=${RUNTIME})..."
+export DESKTOP_BASE DRIVER_IMAGE
+echo "Building reavion-desktop (runtime=${RUNTIME}, base=${DESKTOP_BASE}, driver=${DRIVER_IMAGE})..."
 compose build "$@"
-echo "Build complete: localhost/cua-agent-desktop:local"
+echo "Build complete: localhost/reavion-desktop:local"

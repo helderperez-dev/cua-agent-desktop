@@ -3,7 +3,7 @@
 set -euo pipefail
 
 RUNTIME="${CUA_RUNTIME:-docker}"
-CONTAINER="${CUA_CONTAINER:-cua-agent-desktop}"
+CONTAINER="${CUA_CONTAINER:-${REAVION_CONTAINER:-reavion-desktop}}"
 SOCKET="${REAVION_SOCKET:-${CUA_SOCKET:-/run/user/1000/reavion.sock}}"
 DRIVER="${REAVION_DRIVER:-${CUA_DRIVER:-/usr/local/libexec/reavion-desktop/reavion-driver}}"
 
@@ -29,15 +29,15 @@ if ! "$RUNTIME" inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null | grep 
   exit 1
 fi
 
-if ! "$RUNTIME" exec -u cua "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
+if ! "$RUNTIME" exec -u reavion "$CONTAINER" test -S "$SOCKET" 2>/dev/null; then
   echo "ERROR: driver socket '${SOCKET}' not found in '${CONTAINER}'." >&2
   echo "Wait for the desktop to finish starting, or check: ./scripts/status.sh" >&2
   exit 1
 fi
 
 exec "$RUNTIME" exec -i \
-  -u cua \
-  -e HOME=/home/cua \
+  -u reavion \
+  -e HOME=/home/reavion \
   -e DISPLAY=:1 \
   -e CUA_DRIVER_RS_TELEMETRY_ENABLED=0 \
   -e REAVION_DRIVER_RS_TELEMETRY_ENABLED=0 \

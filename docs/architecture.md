@@ -16,8 +16,8 @@ Browser / MCP HTTP client
 ┌─ Linux desktop container ──────────────────────────────────┐
 │  XFCE on DISPLAY=:1                                        │
 │  reavion-driver serve --socket … --grant existing-profile  │
-│  Chrome profile → /home/cua/.config/google-chrome          │
-│  workspace → /home/cua/workspace                           │
+│  Chrome profile → /home/reavion/.config/google-chrome          │
+│  workspace → /home/reavion/workspace                           │
 └────────────────────────────────────────────────────────────┘
 
 Local optional path (stdio):

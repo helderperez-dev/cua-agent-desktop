@@ -1,6 +1,8 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+# Self-contained compile when Railway builds from this repo.
+# Prefer MACHINE_SOURCE_IMAGE=ghcr.io/helderperez-dev/reavion-desktop:main on the control plane.
+dockerfilePath = "Dockerfile.vendor"
 
 [deploy]
 # Desktop + driver + edge need a few minutes on first boot.
