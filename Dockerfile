@@ -1,8 +1,12 @@
 # cua-agent-desktop: XFCE sandbox + reavion-driver + noVNC + remote MCP/VNC edge
 #
-# Builds Reavion Driver from vendor/reavion-driver (run scripts/sync-driver.sh
-# before commit/deploy). Base desktop stack remains trycua/xfce-cua.
+# Desktop base: reavion/xfce (from helderperez-dev/reavion-images).
+# Driver: built from vendor/reavion-driver (scripts/sync-driver.sh).
+#
+# Local:  ./scripts/build.sh after: (cd ../reavion-images && ./scripts/build.sh xfce)
+# Override: docker compose build --build-arg DESKTOP_BASE=trycua/xfce-cua:…
 
+ARG DESKTOP_BASE=reavion/xfce:local
 ARG RUST_VERSION=1.97.1
 
 # ---------------------------------------------------------------------------
@@ -43,18 +47,19 @@ RUN set -eux; \
 # ---------------------------------------------------------------------------
 # Stage 2: desktop runtime image
 # ---------------------------------------------------------------------------
-FROM docker.io/trycua/xfce-cua@sha256:274eb636f5cf3fc58f705916ee72b7a701270b3877369d08533a385c5325be9b
+FROM ${DESKTOP_BASE}
 
 ARG TARGETARCH
 ARG CADDY_VERSION=2.10.2
 ARG REAVION_DRIVER_VERSION=0.38.0
+ARG DESKTOP_BASE
 
 LABEL org.opencontainers.image.title="cua-agent-desktop" \
       org.opencontainers.image.description="Isolated Linux desktop for AI agents via Reavion Driver MCP + noVNC" \
       cua.agent.desktop.managed="true" \
       cua.agent.desktop.driver="reavion-driver" \
       cua.agent.desktop.driver.version="0.38.0" \
-      cua.agent.desktop.base.digest="sha256:274eb636f5cf3fc58f705916ee72b7a701270b3877369d08533a385c5325be9b"
+      cua.agent.desktop.base="${DESKTOP_BASE}"
 
 # Edge / remote defaults (Railway injects PORT; set MCP_API_KEY in the service)
 # VNC_RESOLUTION is read by base start-vnc.sh (-geometry). 1280x720 scales cleanly
