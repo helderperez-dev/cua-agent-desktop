@@ -12,7 +12,9 @@ pub use reavion_driver_contract::{
     CursorReducedMotion as ReducedMotion, CursorTarget as TargetModifier,
 };
 
-pub const DEFAULT_THEME_ID: &str = "reavion.default";
+// Must match the id inside assets/reavion.default.reavion-theme (still
+// authored as cua.default until the theme artifact is regenerated).
+pub const DEFAULT_THEME_ID: &str = "cua.default";
 pub const DEFAULT_THEME_VERSION: &str = "2.0.0";
 pub const THEME_PROFILE: &str = "reavion-driver-actions-v2";
 pub const CANVAS_SIZE: f32 = 128.0;
