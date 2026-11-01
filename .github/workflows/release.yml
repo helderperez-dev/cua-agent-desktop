@@ -55,6 +55,7 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+
       - name: Choose Dockerfile (GHCR bases vs vendor compile)
         id: df
         run: |
@@ -93,3 +94,17 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.desktop_tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.ver.outputs.sha_tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Make reavion-desktop publicly pullable (Railway)
+        if: steps.df.outputs.skip != 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for url in             "https://api.github.com/user/packages/container/reavion-desktop/visibility"             "https://api.github.com/orgs/helderperez-dev/packages/container/reavion-desktop/visibility"; do
+            if curl -fsS -X POST               -H "Accept: application/vnd.github+json"               -H "Authorization: Bearer ${GH_TOKEN}"               -H "X-GitHub-Api-Version: 2022-11-28"               "$url"               -d '{"visibility":"public"}'; then
+              echo "Set reavion-desktop visibility=public"
+              exit 0
+            fi
+          done
+          echo "::warning::Could not set reavion-desktop public — set Package visibility manually for Railway pulls"
