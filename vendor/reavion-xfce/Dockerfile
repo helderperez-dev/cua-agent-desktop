@@ -114,7 +114,7 @@ RUN chmod +x /usr/local/bin/*.sh \
         /usr/share/reavion-desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-power-manager.desktop \
     && printf '[Desktop Entry]\nHidden=true\n' > /home/reavion/.config/autostart/xfce4-screensaver.desktop \
-    && printf '1\n' > /usr/share/reavion-desktop/THEME_VERSION \
+    && printf '2\n' > /usr/share/reavion-desktop/THEME_VERSION \
     && chown -R reavion:reavion /home/reavion /run/user/1000 \
     && chmod 0700 /run/user/1000
 
