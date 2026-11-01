@@ -17,7 +17,7 @@ Seat release workflow ([`.github/workflows/release.yml`](../.github/workflows/re
 
 | Secret | Value |
 |---|---|
-| `DOCKERHUB_USERNAME` | Hub namespace (e.g. `helderperez`) |
+| `DOCKERHUB_USERNAME` | Hub namespace (e.g. `helderbuilds`) |
 | `DOCKERHUB_TOKEN` | Hub access token with read/write |
 
 Published tags: `main` / version tag, `latest`, `sha-<12>`.
@@ -27,7 +27,7 @@ Keep the Hub repo **public** so Railway Hobby can pull without registry credenti
 Control plane production:
 
 ```env
-MACHINE_SOURCE_IMAGE=docker.io/<hub-user>/reavion-desktop:main
+MACHINE_SOURCE_IMAGE=docker.io/helderbuilds/reavion-desktop:main
 MACHINE_SOURCE_REPO=helderperez-dev/cua-agent-desktop
 ```
 
