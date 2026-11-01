@@ -116,10 +116,14 @@ RUN set -eux; \
 COPY image/start-reavion-driver.sh /usr/local/bin/start-reavion-driver.sh
 COPY image/start-mcp-gateway.sh /usr/local/bin/start-mcp-gateway.sh
 COPY image/start-edge-proxy.sh /usr/local/bin/start-edge-proxy.sh
+COPY image/start-system-dbus.sh /usr/local/bin/start-system-dbus.sh
+COPY image/fix-chrome-profile.sh /usr/local/bin/fix-chrome-profile.sh
 COPY image/Caddyfile /etc/caddy/Caddyfile
 COPY image/reavion-driver.conf /etc/supervisor/conf.d/reavion-driver.conf
 COPY image/mcp-gateway.conf /etc/supervisor/conf.d/mcp-gateway.conf
 COPY image/edge-proxy.conf /etc/supervisor/conf.d/edge-proxy.conf
+COPY image/dbus-system.conf /etc/supervisor/conf.d/dbus-system.conf
+COPY image/fix-chrome-profile.conf /etc/supervisor/conf.d/fix-chrome-profile.conf
 
 # Branding overlay on top of XFCE base noVNC tree (logos + connect screen).
 COPY vendor/reavion-xfce/vendor/reavion-vnc/vnc.html /usr/share/reavion-vnc/vnc.html
@@ -141,14 +145,15 @@ COPY vendor/reavion-xfce/assets/applications/reavion-apps.desktop /usr/share/app
 COPY vendor/reavion-xfce/src/desktop-skel/ /usr/share/reavion-desktop/skel/
 COPY --chown=reavion:reavion vendor/reavion-xfce/src/gtk-3.0/ /home/reavion/.config/gtk-3.0/
 RUN chmod 0755 /usr/local/bin/reavion-desktop-theme.sh /usr/local/bin/xstartup.sh \
- && mkdir -p /usr/share/icons/hicolor/48x48/apps /home/reavion/.config/autostart \
+ && mkdir -p /usr/share/icons/hicolor/48x48/apps /home/reavion/.config/autostart /etc/xdg/autostart \
  && cp -a /usr/share/reavion-desktop/skel/autostart/. /home/reavion/.config/autostart/ 2>/dev/null || true \
+ && cp -a /usr/share/reavion-desktop/skel/autostart/google-chrome.desktop /etc/xdg/autostart/ 2>/dev/null || true \
  && chown -R reavion:reavion /home/reavion/.config/autostart \
  && gtk-update-icon-cache -f /usr/share/icons/hicolor 2>/dev/null || true \
  && apt-get update \
- && apt-get install -y --no-install-recommends xfce4-whiskermenu-plugin \
+ && apt-get install -y --no-install-recommends dbus xfce4-whiskermenu-plugin \
  && rm -rf /var/lib/apt/lists/* \
- && printf '6\n' > /usr/share/reavion-desktop/THEME_VERSION
+ && printf '7\n' > /usr/share/reavion-desktop/THEME_VERSION
 
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 
@@ -156,8 +161,14 @@ RUN chmod 0755 \
       /usr/local/bin/start-reavion-driver.sh \
       /usr/local/bin/start-mcp-gateway.sh \
       /usr/local/bin/start-edge-proxy.sh \
+      /usr/local/bin/start-system-dbus.sh \
+      /usr/local/bin/fix-chrome-profile.sh \
  && rm -f /etc/supervisor/conf.d/cua-driver.conf \
- && for conf in reavion-driver mcp-gateway edge-proxy; do \
+ && if grep -Fq '[program:dbus-system]' /etc/supervisor/supervisord.conf 2>/dev/null; then \
+      rm -f /etc/supervisor/conf.d/dbus-system.conf; \
+    fi \
+ && for conf in dbus-system fix-chrome-profile reavion-driver mcp-gateway edge-proxy; do \
+      [ -f "/etc/supervisor/conf.d/${conf}.conf" ] || continue; \
       if [ -f /etc/supervisor/conf.d/supervisord.conf ] \
          && ! grep -Fq "[program:${conf}]" /etc/supervisor/conf.d/supervisord.conf; then \
         printf '\n' >> /etc/supervisor/conf.d/supervisord.conf; \
@@ -168,6 +179,15 @@ RUN chmod 0755 \
       && ! grep -Eq 'files[[:space:]]*=[[:space:]]*/etc/supervisor/conf.d' /etc/supervisor/supervisord.conf \
       && ! grep -Fq '[program:reavion-driver]' /etc/supervisor/supervisord.conf; then \
       printf '\n[include]\nfiles = /etc/supervisor/conf.d/*.conf\n' >> /etc/supervisor/supervisord.conf; \
+    fi \
+ && if [ -f /etc/supervisor/supervisord.conf ] \
+      && ! grep -Eq 'files[[:space:]]*=[[:space:]]*/etc/supervisor/conf.d' /etc/supervisor/supervisord.conf; then \
+      for conf in dbus-system fix-chrome-profile; do \
+        [ -f "/etc/supervisor/conf.d/${conf}.conf" ] || continue; \
+        grep -Fq "[program:${conf}]" /etc/supervisor/supervisord.conf && continue; \
+        printf '\n' >> /etc/supervisor/supervisord.conf; \
+        cat "/etc/supervisor/conf.d/${conf}.conf" >> /etc/supervisor/supervisord.conf; \
+      done; \
     fi
 
 WORKDIR /home/reavion

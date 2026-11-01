@@ -6,10 +6,14 @@ One env var on `reavion-app-backend`:
 
 | Mode | `MACHINE_SOURCE_IMAGE` | What Railway does |
 |---|---|---|
+| **Scratch (default)** | empty | Clone `MACHINE_SOURCE_REPO` and build `Dockerfile.vendor` |
 | **Fast** | `docker.io/<hub-user>/reavion-desktop:main` | Pull public Hub image (no build) |
-| **Scratch** | empty | Clone `MACHINE_SOURCE_REPO` and build `Dockerfile.vendor` |
 
-Switching modes: change the variable, redeploy the backend, then provision new seats. Existing seats keep their current source until recreated.
+**Use scratch by default.** Hub-image seats have been observed with `reavion-driver` FATAL and `/mcp` 502 while vendor-built seats (`r3mrem`) work. Only enable Fast after `/mcp` initialize succeeds on a Hub-deployed seat.
+
+Switching modes: change the variable, redeploy the backend, then provision new seats. Existing seats keep their current source until recreated (or reconnect + redeploy).
+
+**Volume:** mount `/home/reavion/.config/google-chrome` only. Do **not** mount `/home/reavion` — an empty volume hides image skel/XDG config.
 
 ## Docker Hub publish (Hobby-friendly)
 
@@ -24,11 +28,12 @@ Published tags: `main` / version tag, `latest`, `sha-<12>`.
 
 Keep the Hub repo **public** so Railway Hobby can pull without registry credentials.
 
-Control plane production:
+Control plane production (reliable path):
 
 ```env
-MACHINE_SOURCE_IMAGE=docker.io/helderbuilds/reavion-desktop:main
+MACHINE_SOURCE_IMAGE=
 MACHINE_SOURCE_REPO=helderperez-dev/cua-agent-desktop
+MACHINE_VOLUME_MOUNTS=/home/reavion/.config/google-chrome
 ```
 
 ## GHCR (CI / cascade)

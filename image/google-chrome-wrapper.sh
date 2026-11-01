@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch Google Chrome with flags needed inside this hardened container.
+# Launch Google Chrome with flags needed inside this hardened agent seat.
 set -euo pipefail
 
 REAL="${CHROME_REAL:-/usr/bin/google-chrome-stable.real}"
@@ -13,6 +13,15 @@ if [ ! -x "$REAL" ]; then
   done
 fi
 
+# Chrome/Chromium 150+ SIGTRAPs (exit 133) if the system bus is missing.
+# Supervisord starts dbus-system first; wait briefly for late boots.
+for _ in $(seq 1 50); do
+  if [ -S /run/dbus/system_bus_socket ] || [ -S /var/run/dbus/system_bus_socket ]; then
+    break
+  fi
+  sleep 0.1
+done
+
 # Match the VNC framebuffer EXACTLY — agents click in native coordinates.
 # Do not shrink for the panel; --start-maximized fills the usable work area.
 IFS=x read -r _chrome_w _chrome_h <<EOF
@@ -21,9 +30,12 @@ EOF
 _chrome_w="${_chrome_w:-1280}"
 _chrome_h="${_chrome_h:-720}"
 
-# --force-renderer-accessibility: required by cua-driver on Linux for exact
-# browser bind + semantic snapshots (see cua.ai/docs/cua-driver/guides/browsers).
+# --force-renderer-accessibility: required by reavion-driver on Linux for exact
+# browser bind + semantic snapshots.
 # --no-sandbox: needed under cap_drop ALL; banner is expected, not a bind blocker.
+# --remote-debugging-port: seat Chrome must expose DevToolsActivePort at startup
+# so browser_prepare(existing_profile) can attach without a UI toggle + restart.
+# Loopback only — not published outside the container network namespace.
 exec "$REAL" \
   --no-sandbox \
   --disable-dev-shm-usage \
@@ -32,6 +44,9 @@ exec "$REAL" \
   --no-default-browser-check \
   --password-store=basic \
   --force-renderer-accessibility \
+  --remote-debugging-address=127.0.0.1 \
+  --remote-debugging-port=9222 \
+  --remote-allow-origins=* \
   --start-maximized \
   --window-size="${_chrome_w},${_chrome_h}" \
   --window-position=0,0 \

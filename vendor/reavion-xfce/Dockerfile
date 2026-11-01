@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     at-spi2-core \
     ca-certificates \
     curl \
+    dbus \
     dbus-x11 \
     ffmpeg \
     firefox-esr \
