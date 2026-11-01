@@ -1,0 +1,445 @@
+/*
+ * Reavion desktop viewer — quiet chrome over noVNC.
+ * Gate + session share index.html.
+ */
+
+:root {
+  --reavion-ink: #0c0c0d;
+  --reavion-mist: #ececec;
+  --reavion-line: rgba(255, 255, 255, 0.1);
+  --reavion-elevated: #141416;
+  --reavion-bg0: #0c0c0d;
+  --reavion-bg1: #141416;
+}
+
+html,
+body {
+  background-color: var(--reavion-bg0) !important;
+  background-image: linear-gradient(180deg, var(--reavion-bg1) 0%, var(--reavion-bg0) 100%) !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: cover !important;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hide stock toolbar until a session is connected */
+:root:not(.noVNC_connected) #noVNC_control_bar_anchor,
+:root:not(.noVNC_connected) #noVNC_hint_anchor {
+  display: none !important;
+}
+
+/* Kill stock noVNC grey canvas / curve while disconnected */
+:root:not(.noVNC_connected) #noVNC_container {
+  background: transparent !important;
+}
+
+#noVNC_container {
+  background-color: var(--reavion-bg0) !important;
+}
+
+/* Connect gate — logo + Connect, same look as the old landing */
+#noVNC_connect_dlg {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  width: min(240px, calc(100vw - 64px));
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+:root.noVNC_connected #noVNC_connect_dlg,
+:root.noVNC_connecting #noVNC_connect_dlg,
+body:has(#noVNC_credentials_dlg.noVNC_open) #noVNC_connect_dlg,
+body:has(#noVNC_verify_server_dlg.noVNC_open) #noVNC_connect_dlg {
+  display: none !important;
+}
+
+.reavion_gate_logo {
+  display: block;
+  width: 140px;
+  height: auto;
+  margin: 0 0 40px;
+}
+
+#noVNC_connect_button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 20px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  font: 500 14px/1.2 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  letter-spacing: -0.01em;
+  color: var(--reavion-ink) !important;
+  background: var(--reavion-mist) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: opacity 0.15s ease;
+}
+
+#noVNC_connect_button:hover {
+  opacity: 0.92;
+}
+
+#noVNC_connect_button:active {
+  opacity: 0.84;
+}
+
+#noVNC_connect_button img {
+  display: none;
+}
+
+/* Status — keep readable, less stock noVNC */
+#noVNC_status {
+  border-radius: 0 !important;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/*
+ * Left control bar — keep stock noVNC toggle behavior,
+ * restyle from blue rail → quiet charcoal.
+ */
+#noVNC_control_bar {
+  background: rgba(18, 18, 20, 0.97) !important;
+  border-radius: 0 12px 12px 0 !important;
+  box-shadow: none !important;
+}
+
+#noVNC_control_bar.noVNC_open {
+  box-shadow: 8px 0 28px rgba(0, 0, 0, 0.35) !important;
+}
+
+#noVNC_control_bar::before {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#noVNC_control_bar.noVNC_open::before {
+  box-shadow: none !important;
+}
+
+.noVNC_right #noVNC_control_bar {
+  border-radius: 12px 0 0 12px !important;
+}
+
+#noVNC_control_bar .noVNC_logo {
+  all: unset;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 8px 10px;
+  line-height: 0;
+}
+
+#noVNC_control_bar .reavion_brand_mark {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  margin: 0 auto;
+  opacity: 0.92;
+}
+
+#noVNC_control_bar .noVNC_logo + hr {
+  border: none;
+  border-top: 1px solid var(--reavion-line);
+  margin: 0 10px 8px;
+}
+
+#noVNC_control_bar .noVNC_button {
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  background-image: none !important;
+  opacity: 0.88;
+  transition: background 0.12s ease, opacity 0.12s ease;
+}
+
+#noVNC_control_bar .noVNC_button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  opacity: 1;
+}
+
+#noVNC_control_bar .noVNC_button.noVNC_selected {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  opacity: 1;
+}
+
+#noVNC_control_bar .noVNC_button:not(:disabled):active {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Drag handle — same toggle affordance, no blue texture */
+#noVNC_control_bar_handle {
+  background-color: #1a1a1d !important;
+  background-image: none !important;
+  border: 1px solid var(--reavion-line) !important;
+  border-radius: 8px !important;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+#noVNC_control_bar_handle:after {
+  filter: invert(1) opacity(0.55);
+}
+
+#noVNC_control_bar_hint {
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.45), inset 0 0 12px 10px rgba(18, 18, 20, 0.85) !important;
+}
+
+:root.noVNC_connected #noVNC_control_bar_anchor.noVNC_idle {
+  opacity: 0.72;
+}
+
+/*
+ * Panels — settings, clipboard, power, credentials, identity
+ */
+.noVNC_panel {
+  width: min(360px, calc(100vw - 48px));
+  padding: 20px !important;
+  background: var(--reavion-elevated) !important;
+  border: 1px solid var(--reavion-line) !important;
+  border-radius: 12px !important;
+  color: rgba(236, 236, 236, 0.88) !important;
+  font: 400 13px/1.45 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45) !important;
+}
+
+.noVNC_panel hr {
+  border: none !important;
+  border-top: 1px solid var(--reavion-line) !important;
+  margin: 14px 0 !important;
+}
+
+.noVNC_panel .noVNC_heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--reavion-mist) !important;
+  font-size: 15px !important;
+  font-weight: 560 !important;
+  letter-spacing: -0.01em;
+}
+
+.noVNC_panel .noVNC_heading img {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+  filter: invert(1);
+}
+
+.noVNC_panel label {
+  color: rgba(236, 236, 236, 0.55) !important;
+  font-size: 12px !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin: 0 0 6px !important;
+  white-space: normal !important;
+}
+
+.noVNC_panel li {
+  color: rgba(236, 236, 236, 0.75);
+}
+
+.noVNC_expander ~ * {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-radius: 8px !important;
+}
+
+#noVNC_fingerprint_block {
+  margin: 12px 0 !important;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--reavion-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+#noVNC_fingerprint_block b {
+  display: block;
+  margin-bottom: 4px;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 500;
+  color: rgba(236, 236, 236, 0.55);
+}
+
+/*
+ * Shared form controls — kill stock grey gradients / blue accents
+ */
+.noVNC_panel input:not([type="image"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+.noVNC_panel select,
+.noVNC_panel textarea,
+#noVNC_credentials_dlg input:not([type="button"]):not([type="submit"]),
+#noVNC_verify_server_dlg input:not([type="button"]):not([type="submit"]) {
+  appearance: none !important;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 12px !important;
+  padding: 10px 12px !important;
+  border: 1px solid var(--reavion-line) !important;
+  border-radius: 8px !important;
+  background: #0e0e10 !important;
+  background-image: none !important;
+  color: var(--reavion-mist) !important;
+  font: 400 14px/1.3 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.noVNC_panel input:not([type="image"]):not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):focus,
+.noVNC_panel select:focus,
+.noVNC_panel textarea:focus,
+#noVNC_credentials_dlg input:not([type="button"]):not([type="submit"]):focus,
+#noVNC_verify_server_dlg input:not([type="button"]):not([type="submit"]):focus {
+  border-color: rgba(236, 236, 236, 0.28) !important;
+  background: #121214 !important;
+}
+
+.noVNC_panel input::placeholder,
+.noVNC_panel textarea::placeholder {
+  color: rgba(236, 236, 236, 0.35);
+}
+
+.noVNC_panel select {
+  --select-arrow: url('data:image/svg+xml;utf8,<svg width="8" height="6" viewBox="0 0 8 6" xmlns="http://www.w3.org/2000/svg"><path d="m6.5 1.5 -2.5 3 -2.5 -3 5 0" stroke-width="2" stroke="rgb(236,236,236)" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-image: var(--select-arrow) !important;
+  background-repeat: no-repeat !important;
+  background-position: calc(100% - 12px) center !important;
+  padding-right: 32px !important;
+}
+
+.noVNC_panel option {
+  color: var(--reavion-mist);
+  background: #121214;
+}
+
+.noVNC_panel input[type="checkbox"],
+.noVNC_panel input[type="radio"] {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 8px 0 0 !important;
+  padding: 0 !important;
+  border: 1px solid rgba(236, 236, 236, 0.35) !important;
+  background: #0e0e10 !important;
+  background-image: none !important;
+  vertical-align: middle;
+}
+
+.noVNC_panel input[type="checkbox"] {
+  border-radius: 4px !important;
+}
+
+.noVNC_panel input[type="radio"] {
+  border-radius: 50% !important;
+}
+
+.noVNC_panel input[type="checkbox"]:checked,
+.noVNC_panel input[type="radio"]:checked {
+  background-color: var(--reavion-mist) !important;
+  border-color: var(--reavion-mist) !important;
+}
+
+.noVNC_panel input[type="checkbox"]:checked::after {
+  border-color: var(--reavion-ink) !important;
+}
+
+#noVNC_clipboard_text {
+  min-height: 140px;
+  resize: vertical;
+}
+
+/* Primary / secondary actions */
+.noVNC_submit,
+.noVNC_panel input[type="button"],
+.noVNC_panel input[type="submit"],
+#noVNC_transition input[type="button"] {
+  float: none !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-height: 40px;
+  margin: 4px 0 0 8px !important;
+  padding: 0 16px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  cursor: pointer;
+  font: 500 13px/1.2 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  letter-spacing: -0.01em;
+  color: var(--reavion-ink) !important;
+  background: var(--reavion-mist) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: opacity 0.15s ease;
+}
+
+.noVNC_panel form > div:last-child,
+#noVNC_verify_server_dlg form > div:last-child,
+#noVNC_credentials_dlg form > div:last-child {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.noVNC_panel form > div:last-child .noVNC_submit,
+.noVNC_panel form > div:last-child input[type="button"],
+.noVNC_panel form > div:last-child input[type="submit"] {
+  margin: 0 !important;
+}
+
+#noVNC_reject_server_button,
+#noVNC_cancel_reconnect_button {
+  color: var(--reavion-mist) !important;
+  background: transparent !important;
+  border: 1px solid var(--reavion-line) !important;
+}
+
+.noVNC_submit:hover,
+.noVNC_panel input[type="button"]:hover,
+.noVNC_panel input[type="submit"]:hover,
+#noVNC_transition input[type="button"]:hover {
+  opacity: 0.92;
+}
+
+/* Auth dialogs sit centered over the dark gate */
+#noVNC_credentials_dlg,
+#noVNC_verify_server_dlg {
+  max-width: 360px;
+}
+
+#noVNC_transition {
+  color: var(--reavion-mist) !important;
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+#noVNC_transition_text {
+  font-size: 14px !important;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  opacity: 0.8;
+}
+
+#noVNC_power_buttons input[type="button"] {
+  width: 100% !important;
+  margin: 0 0 8px !important;
+}
