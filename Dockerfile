@@ -121,6 +121,12 @@ COPY image/reavion-driver.conf /etc/supervisor/conf.d/reavion-driver.conf
 COPY image/mcp-gateway.conf /etc/supervisor/conf.d/mcp-gateway.conf
 COPY image/edge-proxy.conf /etc/supervisor/conf.d/edge-proxy.conf
 
+# Branding overlay on top of XFCE base noVNC tree (logos + connect screen).
+COPY vendor/reavion-xfce/vendor/reavion-vnc/vnc.html /usr/share/reavion-vnc/vnc.html
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/styles/base.css /usr/share/reavion-vnc/app/styles/base.css
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-white.png /usr/share/reavion-vnc/app/images/reavion-logo-white.png
+COPY vendor/reavion-xfce/vendor/reavion-vnc/app/images/reavion-logo-black.png /usr/share/reavion-vnc/app/images/reavion-logo-black.png
+
 RUN ln -sfn /usr/local/bin/start-reavion-driver.sh /usr/local/bin/start-cua-driver.sh
 
 RUN chmod 0755 \

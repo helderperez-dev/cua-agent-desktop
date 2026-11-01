@@ -537,6 +537,14 @@ html {
 
 #noVNC_control_bar .noVNC_logo {
   font-size: 13px;
+  line-height: 0;
+  padding: 6px 4px 2px;
+}
+#noVNC_control_bar .reavion_brand_mark {
+  display: block;
+  width: 92px;
+  height: auto;
+  margin: 0 auto;
 }
 
 .noVNC_logo + hr {
@@ -727,12 +735,25 @@ html {
 
   border-radius: 5px;
 }
+#noVNC_connect_dlg .reavion_connect_logo {
+  font-size: 0;
+  line-height: 0;
+}
+#noVNC_connect_dlg .reavion_connect_logo img {
+  display: block;
+  width: min(280px, 70vw);
+  height: auto;
+  margin: 0 auto;
+}
 @media (max-width: 440px) {
   #noVNC_connect_dlg {
     max-width: calc(100vw - 100px);
   }
   #noVNC_connect_dlg .noVNC_logo {
     font-size: calc(25vw - 30px);
+  }
+  #noVNC_connect_dlg .reavion_connect_logo {
+    font-size: 0;
   }
 }
 #noVNC_connect_dlg div {
